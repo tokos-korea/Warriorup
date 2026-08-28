@@ -1,0 +1,2221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>용사 강화하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#0a0912; --stone:#161226; --stone-2:#211b36; --line:#332a4d;
+  --bone:#ece3d2; --ash:#8c83a3; --ember:#ff7a3c; --gold:#f5c451;
+  --blood:#e5484d; --jade:#3ddc97;
+  --tier:#9aa4b2; --tier-dark:#5d6472; --glow:#cfd6e0;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Gothic A1',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  background:
+    radial-gradient(1100px 700px at 50% -10%, #241b3f 0%, transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, #2a1533 0%, transparent 60%),
+    var(--void);
+  color:var(--bone); min-height:100vh; display:flex; justify-content:center; padding:12px 12px 24px;
+}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size:3px 3px;opacity:.5}
+.wrap{width:100%;max-width:1080px;position:relative;z-index:1}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-family:'Black Han Sans','Gothic A1',sans-serif;font-weight:400;
+  font-size:clamp(22px,4.6vw,30px);letter-spacing:.02em;
+  background:linear-gradient(180deg,#fff5df,#f5c451 60%,#c98a25);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .ver{font-size:11px;color:var(--ash);letter-spacing:.14em}
+.purse{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:7px;background:var(--stone);border:1px solid var(--line);
+  border-radius:999px;padding:7px 14px;font-size:13px;font-weight:700;white-space:nowrap}
+.chip small{color:var(--ash);font-weight:500;font-size:11px}
+.chip .val{font-variant-numeric:tabular-nums}
+.chip.gold .val{color:var(--gold)}
+.chip.record .val{color:var(--ember)}
+
+.board{display:grid;grid-template-columns:64px 1fr 306px;gap:18px;align-items:start}
+@media(max-width:940px){.board{grid-template-columns:44px 1fr;gap:12px}.side{grid-column:1/-1}}
+
+.ladder{background:var(--stone);border:1px solid var(--line);border-radius:14px;
+  padding:10px 6px;display:flex;flex-direction:column-reverse;gap:3px;position:sticky;top:14px}
+.rung{height:14px;border-radius:4px;background:#201b33;position:relative;display:flex;
+  align-items:center;justify-content:center;font-size:8px;color:#4b4166;font-weight:700;transition:.25s;cursor:pointer}
+.rung.filled{background:linear-gradient(90deg,var(--tier-dark),var(--tier));color:#0a0912}
+.rung.now{background:var(--tier);box-shadow:0 0 12px var(--tier);transform:scaleX(1.18);color:#0a0912;font-size:9px}
+.rung.gate::after{content:'';position:absolute;left:-5px;top:50%;width:4px;height:4px;
+  border-radius:50%;background:var(--blood);transform:translateY(-50%)}
+@media(max-width:940px){.rung{height:10px;font-size:0}.rung.now{font-size:0}}
+
+.altar{background:linear-gradient(180deg,var(--stone-2),var(--stone));border:1px solid var(--line);
+  border-radius:18px;padding:14px 14px 12px;position:relative;overflow:hidden}
+.altar::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(440px 320px at 50% 34%, var(--tier) 0%, transparent 62%);opacity:.14;transition:.45s}
+.altar.shake{animation:shake .45s}
+@keyframes shake{0%,100%{transform:translate(0,0)}15%{transform:translate(-8px,3px) rotate(-.6deg)}
+  35%{transform:translate(7px,-4px) rotate(.5deg)}55%{transform:translate(-5px,2px)}75%{transform:translate(4px,-2px)}}
+.stage{display:flex;flex-direction:column;align-items:center;position:relative}
+.tierTag{font-size:10px;letter-spacing:.2em;color:var(--tier);font-weight:700;
+  border:1px solid var(--tier);border-radius:999px;padding:2px 10px;opacity:.9}
+
+.heroBox{position:relative;width:min(168px,42vw);aspect-ratio:200/250;margin:2px 0}
+.heroBox svg,.heroBox .heroImg{width:100%;height:100%;display:block;object-fit:contain;
+  filter:drop-shadow(0 6px 22px rgba(0,0,0,.55));animation:float 3.8s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.heroBox.pulse svg{animation:float 3.8s ease-in-out infinite, pulseIn .55s ease-out}
+@keyframes pulseIn{0%{filter:drop-shadow(0 0 0 #fff) brightness(2.6)}100%{filter:drop-shadow(0 6px 22px rgba(0,0,0,.55)) brightness(1)}}
+
+.lvLine{display:flex;align-items:baseline;gap:8px}
+.lvNum{font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1;color:var(--tier);text-shadow:0 0 16px var(--tier)}
+.lvNum small{font-size:13px;opacity:.7}
+.heroName{font-family:'Black Han Sans',sans-serif;font-size:clamp(17px,3.6vw,22px);text-align:center;margin-top:1px}
+.heroDesc{font-size:11px;color:var(--ash);text-align:center;margin-top:3px;max-width:400px;line-height:1.42;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.powerLine{font-size:11.5px;color:var(--ash);margin-top:4px;font-variant-numeric:tabular-nums}
+.powerLine b{color:var(--bone)}
+
+.gateWarn{margin-top:8px;width:100%;max-width:440px;background:rgba(229,72,77,.1);
+  border:1px solid rgba(229,72,77,.45);border-radius:10px;padding:8px 11px;font-size:11px;line-height:1.45}
+.gateWarn b{color:var(--blood)}
+
+.odds{width:100%;max-width:440px;margin-top:10px}
+.oddsHead{display:flex;justify-content:space-between;font-size:11px;color:var(--ash);margin-bottom:4px}
+.oddsHead b{color:var(--jade);font-size:13px;font-variant-numeric:tabular-nums}
+.bar{height:10px;border-radius:99px;background:#181329;overflow:hidden;display:flex;border:1px solid var(--line)}
+.bar span{display:block;height:100%;transition:width .3s}
+.b-succ{background:linear-gradient(90deg,#2fae7a,var(--jade))}
+.b-break{background:linear-gradient(90deg,#8f2226,var(--blood))}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:5px;font-size:10px;color:var(--ash)}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px}
+
+.actions{display:flex;gap:8px;width:100%;max-width:440px;margin-top:10px;flex-wrap:wrap}
+.btn{flex:1;min-width:100px;border:none;border-radius:12px;padding:11px 10px;cursor:pointer;
+  font-family:'Gothic A1',sans-serif;font-weight:900;font-size:14px;letter-spacing:.03em;
+  transition:transform .12s,filter .2s,opacity .2s}
+.btn:active{transform:translateY(2px)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-main{flex:2;background:linear-gradient(180deg,#ff9558,var(--ember));color:#2a0f00;
+  box-shadow:0 5px 0 #b8451a,0 10px 24px rgba(255,122,60,.3)}
+.btn-main:active{box-shadow:0 3px 0 #b8451a}
+.btn-main.duel{background:linear-gradient(180deg,#ff6b72,var(--blood));color:#2a0004;box-shadow:0 5px 0 #8f1e22,0 10px 24px rgba(229,72,77,.32)}
+.btn-main.duel:active{box-shadow:0 3px 0 #8f1e22}
+.btn-sub{background:var(--stone);color:var(--bone);border:1px solid var(--line)}
+.btn-sub:hover{border-color:var(--gold);color:var(--gold)}
+.costNote{font-size:11px;font-weight:500;opacity:.8;display:block;margin-top:2px}
+
+.flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Black Han Sans',sans-serif;font-size:clamp(34px,8.5vw,60px);pointer-events:none;opacity:0;text-align:center}
+.flash.go{animation:pop 1s ease-out}
+@keyframes pop{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1.08)}
+  72%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+
+/* 사이드 탭 */
+.side{display:flex;flex-direction:column;gap:14px}
+.tabs{display:flex;gap:6px;background:var(--stone);border:1px solid var(--line);border-radius:14px;padding:5px}
+.tabs button{flex:1;border:none;background:transparent;color:var(--ash);font-family:inherit;font-weight:700;
+  font-size:12.5px;padding:9px 4px;border-radius:10px;cursor:pointer;transition:.15s;position:relative}
+.tabs button.on{background:var(--stone-2);color:var(--gold)}
+.tabs button:disabled{opacity:.3;cursor:not-allowed}
+.tabs .dot{position:absolute;top:5px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--jade);display:none}
+.tabs .dot.show{display:block}
+.pane{display:none;flex-direction:column;gap:14px}
+.pane.on{display:flex}
+
+.card{background:var(--stone);border:1px solid var(--line);border-radius:16px;padding:15px}
+.card h2{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:15px;letter-spacing:.06em;
+  margin-bottom:11px;color:var(--gold);display:flex;justify-content:space-between;align-items:center}
+.card h2 em{font-style:normal;font-size:11px;color:var(--ash);font-family:'Gothic A1',sans-serif}
+.item{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #262038}
+.item:first-of-type{border-top:none}
+.item .ico{font-size:19px;width:24px;text-align:center}
+.item .txt{flex:1;min-width:0}
+.item .nm{font-size:13px;font-weight:700}
+.item .ds{font-size:10.5px;color:var(--ash);line-height:1.35;margin-top:1px}
+.item .own{font-size:11px;color:var(--jade);font-weight:700;margin-left:4px}
+.buy{border:1px solid var(--line);background:#1d1830;color:var(--gold);border-radius:8px;padding:6px 9px;
+  font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:.15s}
+.buy:hover:not(:disabled){background:var(--gold);color:#241a00;border-color:var(--gold)}
+.buy:disabled{opacity:.3;cursor:not-allowed}
+.useRow{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#1c1730;
+  border:1px solid transparent;cursor:pointer;margin-bottom:6px;font-size:12px;transition:.15s}
+.useRow.on{border-color:var(--jade);background:rgba(61,220,151,.09)}
+.useRow.dead{opacity:.35;cursor:not-allowed}
+.useRow input{accent-color:var(--jade);width:15px;height:15px}
+.useRow .cnt{margin-left:auto;color:var(--ash);font-weight:700}
+.log{height:190px;overflow-y:auto;font-size:12px;line-height:1.65;scrollbar-width:thin}
+.log p{padding:2px 0;border-bottom:1px dotted #262038;color:var(--ash)}
+.log p b{font-weight:700}
+.l-succ b{color:var(--jade)} .l-keep b{color:#9d94b8} .l-down b{color:#e0a13f}
+.l-break b{color:var(--blood)} .l-info b{color:#7cc5ff} .l-gold b{color:var(--gold)}
+.l-drop b{color:#ff9de0} .l-duel b{color:var(--ember)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
+.stats div{background:#1c1730;border-radius:8px;padding:8px 10px}
+.stats span{display:block;color:var(--ash);font-size:10.5px;margin-bottom:2px}
+.stats b{font-variant-numeric:tabular-nums}
+
+/* 대장간 */
+.forgeSum{display:flex;justify-content:space-between;align-items:center;background:#1c1730;
+  border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:10px}
+.forgeSum b{font-size:16px;color:var(--ember);font-variant-numeric:tabular-nums}
+.wlist{display:flex;flex-direction:column;gap:7px;max-height:330px;overflow-y:auto;scrollbar-width:thin}
+.wcard{display:flex;align-items:center;gap:9px;background:#1c1730;border:1px solid #2b2442;
+  border-radius:10px;padding:8px 10px;cursor:pointer;transition:.15s}
+.wcard.on{border-color:var(--ember);background:rgba(255,122,60,.1)}
+.wcard svg{width:26px;height:34px;flex-shrink:0}
+.wcard .wn{font-size:12.5px;font-weight:700;line-height:1.3}
+.wcard .wp{font-size:10.5px;color:var(--ash);font-variant-numeric:tabular-nums}
+.wcard .wq{margin-left:auto;font-size:11px;font-weight:900;color:var(--ash)}
+.empty{text-align:center;color:var(--ash);font-size:12px;padding:24px 8px;line-height:1.7}
+
+/* 모달 */
+.modal{position:fixed;inset:0;background:rgba(6,5,12,.9);z-index:50;display:none;align-items:center;
+  justify-content:center;padding:18px}
+.modal.open{display:flex}
+.sheet{background:var(--stone);border:1px solid var(--line);border-radius:18px;width:100%;
+  max-width:720px;max-height:86vh;overflow-y:auto;padding:20px}
+.sheet h3{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:19px;color:var(--gold);margin-bottom:6px}
+.sheet .sub{font-size:12px;color:var(--ash);margin-bottom:14px;line-height:1.6}
+/* 대결 모드: 무기 목록만 자체 스크롤(고정 높이)이라, 무기가 몇 자루든 총 높이가 일정해서
+   '싸운다' 버튼이 스크롤 없이 바로 보임 */
+/* ===== 대장간 조합 결과 팝업 (작은 크기) ===== */
+#modal[data-mode="forge"] .sheet{
+  max-width:320px;padding:0;overflow:hidden;
+  background:linear-gradient(180deg,#211b36 0%,#141021 100%);
+}
+#modal[data-mode="forge"] .sheet:has(.ng){border-color:rgba(229,72,77,.45)}
+.forgeResult{padding:24px 20px 20px;text-align:center}
+.fIcon{font-size:44px;line-height:1;margin-bottom:8px;
+  animation:fPop .45s cubic-bezier(.2,1.5,.4,1) both}
+.forgeResult.ng .fIcon{animation:fShake .5s both}
+@keyframes fPop{0%{opacity:0;transform:scale(.4) rotate(-20deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes fShake{0%{opacity:0;transform:scale(.6)}30%{opacity:1;transform:scale(1.15)}
+  45%{transform:translateX(-7px)}60%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0) scale(1)}}
+.fTitle{font-family:'Black Han Sans',sans-serif;font-size:22px;margin-bottom:12px}
+.forgeResult.ok .fTitle{background:linear-gradient(180deg,#fff6dc,#f5c451 60%,#c98a25);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.forgeResult.ng .fTitle{color:var(--blood)}
+.fRewardBox{border:1px solid var(--line);border-radius:13px;padding:13px 10px 11px;
+  background:radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,.06), transparent 70%);
+  animation:fPop .45s .15s cubic-bezier(.2,1.5,.4,1) both}
+.fRewardIcon{width:44px;margin:0 auto 6px}
+.fRewardIcon svg{width:100%;height:auto;display:block;filter:drop-shadow(0 3px 12px rgba(0,0,0,.6))}
+.fRewardName{font-family:'Black Han Sans',sans-serif;font-size:17px}
+.fRewardSub{font-size:11px;color:var(--ash);margin-top:3px}
+.fFailMsg{font-size:13px;color:var(--ash);line-height:1.7;
+  background:rgba(229,72,77,.08);border:1px solid rgba(229,72,77,.3);border-radius:11px;padding:12px}
+.fFailMsg b{color:var(--bone)}
+.fOkBtn{width:100%;margin-top:16px}
+
+/* ===== 관문 전투 화면 (반응형: 넓으면 좌우 2단, 좁으면 위아래 1단) ===== */
+#modal[data-mode="duel"] .sheet{
+  max-width:960px;max-height:94vh;padding:0;overflow:hidden;
+  background:linear-gradient(180deg,#1d1733 0%,#141021 60%,#0d0a16 100%);
+  border:1px solid rgba(229,72,77,.4);
+  box-shadow:0 0 0 1px rgba(229,72,77,.1), 0 24px 70px rgba(0,0,0,.75);
+  display:flex;flex-direction:column;
+}
+#modal[data-mode="duel"] #sheetBody{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* 기본(좁은 화면): 위아래 1단 */
+.duelStage{display:flex;flex-direction:column;min-height:0;flex:1}
+.dLeft{display:flex;flex-direction:column;min-height:0;flex:none}
+.dRight{display:flex;flex-direction:column;min-height:0;flex:1;
+  padding:10px 16px 14px;border-top:1px solid var(--line)}
+
+/* --- 몬스터 일러스트 영역 --- */
+.dArt{position:relative;padding:14px 16px 12px;text-align:center;flex:none;
+  background:radial-gradient(120% 90% at 50% 15%, rgba(229,72,77,.16), transparent 70%)}
+.dArt>*{position:relative;z-index:1}
+.dArt .dArtGlow{position:absolute;top:6%;left:50%;width:300px;height:300px;transform:translateX(-50%);
+  background:radial-gradient(circle, rgba(229,72,77,.22) 0%, transparent 65%);pointer-events:none;z-index:0}
+.dGateTag{display:inline-block;font-size:10px;letter-spacing:.2em;color:var(--blood);
+  border:1px solid rgba(229,72,77,.5);border-radius:999px;padding:3px 12px;margin-bottom:6px}
+
+/* 몬스터 이미지/SVG 공용 박스 — 커스텀 PNG와 내장 SVG 모두 같은 규격으로 맞춤 */
+.dMonWrap{width:100%;height:min(210px,27vh);display:flex;align-items:center;justify-content:center;margin:2px 0 6px}
+.dMonWrap svg,.dMonWrap .monImg{
+  max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;display:block;
+  filter:drop-shadow(0 8px 26px rgba(0,0,0,.75));
+  animation:dFloat 4.2s ease-in-out infinite}
+@keyframes dFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.dMonName{font-family:'Black Han Sans',sans-serif;font-size:clamp(20px,5.2vw,26px);
+  color:#ffdcdc;text-shadow:0 2px 14px rgba(229,72,77,.5)}
+.dMonDesc{font-size:11px;color:var(--ash);line-height:1.5;margin-top:4px;
+  max-width:420px;margin-left:auto;margin-right:auto;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* --- 왼쪽 하단 조작 패널 --- */
+.dLeftPanel{padding:0 16px 14px;display:flex;flex-direction:column;gap:9px;flex:none}
+.dWarn{font-size:11.5px;color:var(--ash);text-align:center;
+  background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:9px;padding:7px 10px}
+.dWarn b.win{color:var(--jade)} .dWarn b.lose{color:var(--blood)}
+
+.dOdds{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  background:#1c1730;border:1px solid var(--line);border-radius:12px;padding:9px 14px}
+.dOddsLabel{font-size:10px;color:var(--ash);letter-spacing:.06em}
+.dOddsWeapon{font-size:13px;font-weight:700;color:var(--ember);margin-top:2px;
+  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dOddsRight{text-align:right}
+.dOddsPct{font-family:'Black Han Sans',sans-serif;font-size:30px;line-height:1.05;color:var(--jade)}
+.dOddsPct span{font-size:15px;opacity:.75}
+.dOdds.mid .dOddsPct{color:var(--gold)}
+.dOdds.lo .dOddsPct{color:var(--blood)}
+
+.dShieldNote{font-size:11px;color:var(--gold);text-align:center;line-height:1.5}
+.dShieldNote .warn{color:var(--blood)}
+.dFightBtn{width:100%;padding:14px;font-size:16px;margin-top:2px}
+
+/* --- 무기 선택 목록 --- */
+.dSectionTitle{font-size:12px;font-weight:700;color:var(--bone);
+  display:flex;justify-content:space-between;align-items:baseline;flex:none;margin-bottom:7px}
+.dSectionTitle span{font-size:10.5px;color:var(--ash);font-weight:500}
+.dWeaponScroll{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;padding-right:2px}
+.dWeapons{display:flex;flex-direction:column;gap:7px}
+
+/* 가로형 무기 카드 — 아이콘 + 이름/등급 + 승률 */
+.dwCard{display:flex;align-items:center;gap:11px;
+  background:#1c1730;border:1.5px solid #2b2442;border-radius:11px;
+  padding:9px 13px;cursor:pointer;transition:.15s}
+.dwCard:hover{border-color:var(--wc)}
+.dwCard.on{border-color:var(--wc);background:rgba(255,255,255,.07);
+  box-shadow:0 0 0 1px var(--wc), 0 4px 14px rgba(0,0,0,.4)}
+.dwIcon{width:26px;flex:none}
+.dwIcon svg{width:100%;height:auto;display:block}
+.dwInfo{flex:1;min-width:0}
+.dwName{font-size:13px;font-weight:700;color:var(--wc);line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dwTag{font-size:10.5px;color:var(--ash);margin-top:2px}
+.dwPct{font-size:19px;font-weight:900;color:var(--bone);font-variant-numeric:tabular-nums;flex:none}
+.dwPct span{font-size:12px;opacity:.7;margin-left:1px}
+
+/* ===== 넓은 화면: 좌우 2단 ===== */
+@media(min-width:720px){
+  .duelStage{flex-direction:row}
+  .dLeft{flex:1 1 52%;min-width:0;overflow-y:auto}
+  .dRight{flex:1 1 48%;min-width:0;border-top:none;border-left:1px solid var(--line);
+    padding:14px 16px 16px}
+  .dMonWrap{height:min(300px,38vh)}
+  .dArt{padding:18px 18px 14px}
+}
+
+/* ===== 좁은 화면 ===== */
+@media(max-width:420px){
+  .dMonWrap{height:min(170px,23vh)}
+  .dOddsPct{font-size:26px}
+  .dwCard{padding:8px 11px;gap:9px}
+  .dwName{font-size:12px}
+  .dwPct{font-size:17px}
+}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 5px;text-align:right;border-bottom:1px solid #262038}
+th{color:var(--ash);font-weight:700;font-size:11px;position:sticky;top:0;background:var(--stone)}
+td:nth-child(2),th:nth-child(2){text-align:left}
+tr.cur td{background:rgba(245,196,81,.08);color:var(--gold)}
+/* 미도달 구간 안개 */
+tr.fog td{color:transparent;text-shadow:0 0 7px rgba(245,196,81,.5);user-select:none}
+tr.fog{position:relative}
+.closeBtn{width:100%;margin-top:16px;padding:12px;border-radius:10px;border:1px solid var(--line);
+  background:#1d1830;color:var(--bone);font-family:inherit;font-weight:700;cursor:pointer}
+
+.dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:10px}
+.dexCell{background:#1c1730;border:1px solid #2b2442;border-radius:12px;padding:8px 6px;text-align:center}
+.dexCell svg,.dexCell .heroImg{width:100%;height:auto;display:block;aspect-ratio:200/250;object-fit:contain}
+.dexCell .dn{font-size:10.5px;margin-top:4px;font-weight:700;line-height:1.3}
+.dexCell .dl{font-size:9px;color:var(--ash)}
+.dexCell.locked svg,.dexCell.locked .heroImg{filter:blur(5px) grayscale(.5) brightness(.7)}
+.dexCell.locked .dn{color:transparent;text-shadow:0 0 7px rgba(245,196,81,.5)}
+
+/* 대결 */
+.duelHead{display:flex;gap:16px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.monBox{width:190px;flex-shrink:0}
+.monBox svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 18px rgba(0,0,0,.6))}
+.monInfo{flex:1;min-width:190px}
+.monInfo h4{font-family:'Black Han Sans',sans-serif;font-weight:400;font-size:22px;margin-bottom:4px}
+.monInfo p{font-size:12px;color:var(--ash);line-height:1.65}
+.monPow{margin-top:8px;font-size:13px}
+.monPow b{color:var(--blood);font-size:17px;font-variant-numeric:tabular-nums}
+.duelOdds{background:#1c1730;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:12.5px;line-height:1.8}
+.duelOdds .big{font-family:'Black Han Sans',sans-serif;font-size:30px;color:var(--jade);line-height:1.1}
+.duelOdds .warn{color:var(--blood)}
+.duelBtns{display:flex;gap:10px;margin-top:6px}
+.duelBtns .btn{flex:1}
+
+/* ===== 관문 격파 승리 팝업 ===== */
+#modal[data-mode="victory"] .sheet{
+  max-width:420px;padding:0;overflow:hidden;
+  background:linear-gradient(180deg,#241b3f 0%,#161226 55%,#0f0c1a 100%);
+  border:1px solid rgba(245,196,81,.45);
+  box-shadow:0 0 0 1px rgba(245,196,81,.12), 0 20px 60px rgba(0,0,0,.7);
+}
+.victoryWrap{position:relative;padding:26px 22px 22px;text-align:center;overflow:hidden}
+.victoryWrap>*{position:relative;z-index:1}
+.victoryWrap .vRays{position:absolute;top:-190px;left:50%;width:560px;height:560px;transform:translateX(-50%);
+  background:repeating-conic-gradient(from 0deg, rgba(245,196,81,.13) 0deg 7deg, transparent 7deg 22deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 0%, transparent 68%);
+  mask-image:radial-gradient(circle at 50% 50%, #000 0%, transparent 68%);
+  animation:vSpin 26s linear infinite;pointer-events:none;z-index:0}
+@keyframes vSpin{to{transform:translateX(-50%) rotate(360deg)}}
+.victoryWrap.dragon .vRays{background:repeating-conic-gradient(from 0deg, rgba(255,140,60,.18) 0deg 6deg, transparent 6deg 20deg)}
+
+.vBanner{display:inline-block;font-size:10.5px;letter-spacing:.28em;color:var(--gold);
+  border:1px solid rgba(245,196,81,.5);border-radius:999px;padding:4px 14px;margin-bottom:12px}
+.vTitle{font-family:'Black Han Sans',sans-serif;font-size:clamp(26px,7vw,34px);line-height:1.15;
+  background:linear-gradient(180deg,#fff6dc,#f5c451 55%,#c98a25);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 10px rgba(245,196,81,.35));
+  animation:vPop .55s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes vPop{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+.vMonster{font-size:12.5px;color:var(--ash);margin-top:6px}
+.victoryWrap.dragon .vTitle{font-size:clamp(22px,6vw,29px)}
+.vLevel{display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 4px;
+  font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--ash)}
+.vLevel span{font-size:16px;opacity:.6}
+.vLevel .vNew{color:var(--jade);text-shadow:0 0 18px rgba(61,220,151,.5);
+  animation:vPop .5s .18s cubic-bezier(.2,1.4,.4,1) both}
+.vShieldNote{font-size:11.5px;color:var(--gold);background:rgba(245,196,81,.1);
+  border:1px solid rgba(245,196,81,.35);border-radius:9px;padding:7px 10px;margin-top:10px}
+
+.vLoot{margin-top:16px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.vLootRow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:4px 0}
+.vLootRow+.vLootRow{border-top:1px dotted #2b2442}
+.vLootLabel{color:var(--ash)}
+.vLootVal{font-weight:900;font-variant-numeric:tabular-nums}
+.vLootVal.gold{color:var(--gold)}
+
+.vRewardBox{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;
+  background:radial-gradient(120% 100% at 50% 0%, rgba(255,255,255,.06), transparent 70%);
+  animation:vPop .5s .3s cubic-bezier(.2,1.4,.4,1) both}
+.vRewardTag{font-size:10px;letter-spacing:.2em;color:var(--ash);margin-bottom:8px}
+.vRewardIcon{width:52px;margin:0 auto 6px}
+.vRewardIcon svg{width:100%;height:auto;display:block;filter:drop-shadow(0 3px 12px rgba(0,0,0,.6))}
+.vRewardEmoji{font-size:40px;line-height:1;margin-bottom:6px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.6))}
+.vRewardName{font-family:'Black Han Sans',sans-serif;font-size:18px}
+.vRewardSub{font-size:11px;color:var(--ash);margin-top:3px}
+@media(max-width:420px){ .vRewardIcon{width:44px} .vRewardEmoji{font-size:34px} }
+
+/* 토스트 알림 */
+.toastBox{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:80;
+  display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:linear-gradient(180deg,#241b3f,#161226);border:1px solid var(--gold);
+  border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;color:var(--gold);
+  box-shadow:0 8px 24px rgba(0,0,0,.5);opacity:0;transform:translateY(-14px);transition:.35s;white-space:nowrap}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast b{color:#ff9de0}
+@media(max-width:520px){.toast{white-space:normal;text-align:center}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="toastBox" id="toastBox"></div>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>용사 강화하기</h1>
+      <span class="ver">1강 낡은 용사 → 30강 전설의 용사</span>
+    </div>
+    <div class="purse">
+      <div class="chip gold"><small>골드</small><span class="val" id="uiGold">0</span></div>
+      <div class="chip record"><small>최고기록</small><span class="val" id="uiRecord">1강</span></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="ladder" id="ladder"></div>
+
+    <div class="altar" id="altar">
+      <div class="stage">
+        <div class="tierTag" id="uiTier">범인의 계단</div>
+        <div class="heroBox" id="heroBox"></div>
+        <div class="lvLine"><span class="lvNum" id="uiLv">1<small>강</small></span></div>
+        <div class="heroName" id="uiName">낡은 용사</div>
+        <div class="heroDesc" id="uiDesc"></div>
+        <div class="powerLine">전투력 <b id="uiPower">10</b> · 판매가 <b id="uiSell">50</b> G</div>
+
+        <div class="gateWarn" id="gateWarn" style="display:none"></div>
+        <div class="gateWarn" id="reviveWarn" style="display:none;background:rgba(245,196,81,.1);border-color:rgba(245,196,81,.45)"></div>
+
+        <div class="odds" id="oddsBox">
+          <div class="oddsHead">
+            <span id="uiNext">다음 단계</span>
+            <span>성공확률 <b id="uiSucc">100%</b></span>
+          </div>
+          <div class="bar">
+            <span class="b-succ" id="barSucc"></span><span class="b-break" id="barBreak"></span>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--jade)"></i>성공 — 다음 단계로</span>
+            <span><i style="background:var(--blood)"></i>소멸 — 1강으로</span>
+          </div>
+        </div>
+
+        <div class="actions" id="mainActions">
+          <button class="btn btn-main" id="btnUp">강화하기<small class="costNote" id="uiCost">100 G</small></button>
+          <button class="btn btn-sub" id="btnSell">판매<small class="costNote" id="uiSell2">50 G</small></button>
+        </div>
+      </div>
+      <div class="flash" id="flash"></div>
+    </div>
+
+    <div class="side">
+      <div class="tabs">
+        <button data-tab="rec" class="on">기록</button>
+        <button data-tab="forge">대장간<span class="dot" id="forgeDot"></span></button>
+        <button data-tab="item">아이템</button>
+      </div>
+
+      <!-- 아이템 탭 -->
+      <div class="pane" id="pane-item">
+        <div class="card">
+          <h2>상점 <em style="font-size:10.5px">1강일 때만 구매 가능</em></h2>
+          <p style="font-size:11px;color:var(--ash);line-height:1.6;margin-bottom:8px">강화를 시작해 2강 이상이 되면 구매할 수 없습니다. 부활권·방패는 <b style="color:var(--bone)">미리 사두고</b> 도전하세요.</p>
+          <div class="item"><span class="ico">🧿</span>
+            <span class="txt"><span class="nm">용사 부활권<span class="own" id="oRevive">×0</span></span>
+            <span class="ds">강화 실패 시 1강으로 돌아가지 않고 그 자리에서 재도전합니다.</span></span>
+            <button class="buy" data-buy="revive1">— G</button></div>
+          <div class="item"><span class="ico">🧿</span>
+            <span class="txt"><span class="nm">용사 부활권 3개 묶음</span>
+            <span class="ds">3개를 한 번에 구매합니다.</span></span>
+            <button class="buy" data-buy="revive3">— G</button></div>
+          <div class="item"><span class="ico">🗡️</span>
+            <span class="txt"><span class="nm">일반 단검<span class="own" id="oDagger">×0</span></span>
+            <span class="ds">위력 240. 1회용 대결 무기로, 첫 관문 상대로 약 50% 승률을 냅니다.</span></span>
+            <button class="buy" data-buy="dagger">— G</button></div>
+          <div class="item"><span class="ico">🛡️</span>
+            <span class="txt"><span class="nm">전설의 방패<span class="own" id="oShield">×0</span></span>
+            <span class="ds">대결에서 패배해도 딱 1번 더 공격할 기회를 줍니다. 1회용.</span></span>
+            <button class="buy" data-buy="shield">— G</button></div>
+        </div>
+        <div class="card">
+          <h2>워프 상점 <em>1강일 때만 구매 가능, 구매 즉시 이동</em></h2>
+          <div class="item"><span class="ico">🌀</span>
+            <span class="txt"><span class="nm">9강 워프권</span>
+            <span class="ds">강철의 용사(9강)부터 다시 시작합니다.</span></span>
+            <button class="buy" data-buy="w9">— G</button></div>
+          <div class="item"><span class="ico">🌀</span>
+            <span class="txt"><span class="nm">13강 워프권</span>
+            <span class="ds">서리의 용사(13강)부터 다시 시작합니다.</span></span>
+            <button class="buy" data-buy="w13">— G</button></div>
+          <div class="item"><span class="ico">🌀</span>
+            <span class="txt"><span class="nm">14강 워프권</span>
+            <span class="ds">폭풍의 용사(14강)부터 다시 시작합니다.</span></span>
+            <button class="buy" data-buy="w14">— G</button></div>
+          <div class="item"><span class="ico">🌀</span>
+            <span class="txt"><span class="nm">15강 워프권</span>
+            <span class="ds">대지의 용사(15강)부터 다시 시작합니다.</span></span>
+            <button class="buy" data-buy="w15">— G</button></div>
+        </div>
+      </div>
+
+      <!-- 대장간 탭 -->
+      <div class="pane" id="pane-forge">
+        <div class="card">
+          <h2>대장간 <em id="forgeCount">0자루 보관</em></h2>
+          <p style="font-size:11px;color:var(--ash);line-height:1.6;margin-bottom:10px">대결에는 무기를 <b style="color:var(--bone)">단 1자루만</b> 들고 나갈 수 있습니다 (대결 창에서 선택). 같은 등급이 여러 개 모이면 여기서 조합해 상위 등급을 노려보세요.</p>
+          <div class="wlist" id="wlist"></div>
+        </div>
+        <div class="card">
+          <h2 style="flex-wrap:nowrap"><span style="white-space:nowrap">대결 관문</span> <em style="white-space:nowrap;font-size:10.5px">9·14·19·24·29강</em></h2>
+          <div id="gateList" style="font-size:12px;line-height:1.9;color:var(--ash)"></div>
+        </div>
+      </div>
+
+      <!-- 기록 탭 -->
+      <div class="pane on" id="pane-rec">
+        <div class="card">
+          <h2>기록 <em id="uiRate">성공률 0%</em></h2>
+          <div class="stats">
+            <div><span>강화 시도</span><b id="sTry">0</b></div>
+            <div><span>성공</span><b id="sWin">0</b></div>
+            <div><span>소멸</span><b id="sBreak">0</b></div>
+            <div><span>최장 연속 성공</span><b id="sStreak">0</b></div>
+            <div><span>대결 승리</span><b id="sDuelW">0</b></div>
+            <div><span>대결 패배</span><b id="sDuelL">0</b></div>
+            <div><span>누적 수익</span><b id="sEarn">0</b></div>
+            <div><span>누적 지출</span><b id="sSpend">0</b></div>
+          </div>
+        </div>
+        <div class="card"><h2>기록실 <em>최근 순</em></h2><div class="log" id="log"></div></div>
+        <div class="card">
+          <h2>도구</h2>
+          <div class="actions" style="max-width:none;margin-top:0">
+            <button class="btn btn-sub" id="btnDex" style="min-width:0">용사 도감</button>
+            <button class="btn btn-sub" id="btnSwordDex" style="min-width:0">검 도감</button>
+          </div>
+          <div class="actions" style="max-width:none;margin-top:10px">
+            <button class="btn btn-sub" id="btnTable" style="min-width:0">확률표</button>
+            <button class="btn btn-sub" id="btnSound" style="min-width:0">소리 켜기</button>
+          </div>
+          <div class="actions" style="max-width:none;margin-top:10px">
+            <button class="btn btn-sub" id="btnDebugGive" style="width:100%;min-width:0;border-color:#e5484d;color:#ff9aa0">🧪 테스트: 자원 지급 + 25강↑ 강화 100%</button>
+          </div>
+          <div class="actions" style="max-width:none;margin-top:10px">
+            <button class="btn btn-sub" id="btnReset" style="width:100%;min-width:0">처음부터</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="sheet">
+    <h3 id="sheetTitle">단계별 확률표</h3>
+    <p class="sub" id="sheetSub"></p>
+    <div id="sheetBody"></div>
+    <button class="closeBtn" id="btnClose">닫기</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   1. CONFIG
+   ===================================================================== */
+/* =====================================================================
+   0. 이미지 에셋 설정  ★커스텀 일러스트를 넣을 때 여기만 수정하면 됩니다★
+   ---------------------------------------------------------------------
+   · 파일이 없거나 로드에 실패하면 자동으로 기존 SVG 일러스트로 대체됩니다.
+     (없는 파일은 그냥 두면 되고, 콘솔 에러도 나지 않습니다)
+   · 한 장씩 순차적으로 교체해도 됩니다. 예를 들어 hero-1.png만 넣으면
+     1강만 커스텀 이미지가 되고 나머지 29단계는 기존 SVG가 유지됩니다.
+   ===================================================================== */
+const ASSETS = {
+  enabled: true,          // false로 두면 무조건 기존 SVG만 사용
+  basePath: 'images/',    // 이미지 폴더 경로 (HTML 파일 기준 상대경로)
+
+  /* 몬스터 5종 — 관문 단계 번호를 파일명에 사용 */
+  monster: {
+    9:  'monster-9.png',
+    14: 'monster-14.png',
+    19: 'monster-19.png',
+    24: 'monster-24.png',
+    29: 'monster-29.png'
+  },
+
+  /* 용사 30단계 — hero-1.png ~ hero-30.png
+     아래 함수가 파일명을 만들어 줍니다. 규칙을 바꾸고 싶으면 여기만 수정하세요. */
+  heroFile: lv => `hero-${lv}.png`
+};
+
+/* 이미지 존재 여부 캐시: 'ok' | 'fail' | undefined(아직 확인 안 함) */
+const _assetStatus = {};
+
+function assetUrl(file){ return ASSETS.basePath + file; }
+
+/* 이미지를 미리 로드해서 사용 가능 여부를 캐시에 기록.
+   결과가 바뀌면 onReady를 호출해 화면을 다시 그린다. */
+function probeAsset(file, onReady){
+  if(!ASSETS.enabled || !file) return false;
+  const st = _assetStatus[file];
+  if(st === 'ok') return true;
+  if(st === 'fail') return false;
+  _assetStatus[file] = 'pending';
+  const img = new Image();
+  img.onload  = ()=>{ _assetStatus[file]='ok';   if(onReady) onReady(); };
+  img.onerror = ()=>{ _assetStatus[file]='fail'; };
+  img.src = assetUrl(file);
+  return false;   // 이번 렌더에서는 아직 SVG를 사용
+}
+function assetReady(file){
+  return ASSETS.enabled && !!file && _assetStatus[file]==='ok';
+}
+
+const CONFIG = {
+  startGold: 1000000,
+  dropChance: 0.20,       // 7급 이상 무기 드랍 확률
+  dropChanceLow: 0.45,    // 1~6급 무기 드랍 확률 (더 자주 나옴)
+  legendaryChance: 0.03,  // 26강 이상 실패 시 전설의 검이 나올 확률
+  legendaryMinLv: 26,
+  maxWeapons: 40,
+
+  /* 용사 부활권: 개당 가격. 1~6강 실패, 27~29강 실패에는 사용할 수 없습니다. */
+  revivePriceSingle: 2100000,
+  revivePriceBundle3: 6000000,
+  /* 실패한 단계별 부활권 필요 개수. null = 사용 불가 구간. */
+  reviveCost:[null,null,null,null,null,null,
+              1,1,1,1,1,1,1,
+              2,3,4,7,9,10,12,15,17,20,22,23,23,
+              null,null,null,null],
+
+  itemPrice: { dagger: 300000 },              // 일반 단검
+  shieldPrice: 10000000,                      // 전설의 방패 (고정가)
+
+  /* 최고기록 경신 보너스: 이 단계 이상을 '처음' 밟을 때마다 해당 단계 판매가만큼 지급 */
+  recordBonusMinLv: 15,
+
+  /* 관문 격파 보상 — 100% 지급, 가치가 낮을수록 확률이 높음.
+     뒤쪽 관문일수록 좋은 아이템 확률이 조금씩 올라간다. */
+  gateReward: {
+    9:  { weapon:45, revive:25, dagger:15, warp:10, shield:5  },
+    14: { weapon:42, revive:25, dagger:14, warp:11, shield:8  },
+    19: { weapon:40, revive:25, dagger:13, warp:12, shield:10 },
+    24: { weapon:38, revive:25, dagger:11, warp:13, shield:13 }
+    /* 29강(전설의 용)은 상징적으로 전설의 검 100% 확정 지급 — 아래 grantGateReward에서 특수 처리 */
+  },
+  /* 관문별로 지급되는 워프권 종류 */
+  gateWarpKey: { 9:'w9', 14:'w13', 19:'w14', 24:'w15', 29:'w15' },
+
+  warp: {
+    w9: { lv:9,  name:'9강 워프권',  price:800000,
+          desc:'강철의 용사(9강)부터 다시 시작합니다.' },
+    w13:{ lv:13, name:'13강 워프권', price:5000000,
+          desc:'서리의 용사(13강)부터 다시 시작합니다.' },
+    w14:{ lv:14, name:'14강 워프권', price:7500000,
+          desc:'폭풍의 용사(14강)부터 다시 시작합니다.' },
+    w15:{ lv:15, name:'15강 워프권', price:10000000,
+          desc:'대지의 용사(15강)부터 다시 시작합니다.' }
+  },
+
+  /* 성공 아니면 소멸. 실패하면 곧바로 1강(부활권 없으면). */
+  succ:[1.00,1.00,1.00,0.95,0.95,0.90,0.90,0.90,0.85,0.80,
+        0.80,0.75,0.70,0.70,0.65,0.60,0.60,0.55,0.50,0.50,
+        0.45,0.40,0.40,0.40,0.40,0.35,0.50,0.40,0.15],
+  cost:[300,300,500,500,1000,1500,2000,2000,3000,5000,
+        10900,20000,35000,55000,100000,180000,300000,300000,500000,800000,
+        1500000,2250000,3375000,5062500,7593750,11390625,5000000,7500000,11250000],
+  /* 판매가. null = 판매 불가 (1강, 29강, 30강). */
+  sell:[null,150,400,600,800,1600,3500,6100,10000,20000,
+        35100,160000,350000,1000000,3000000,7500000,14200000,20000000,30000000,47500000,
+        68300000,101000000,160000000,230000000,300000000,400000000,1800000000,2500000000,null,null],
+  tiers:[[1,'범인의 계단'],[6,'단련의 계단'],[11,'각성의 계단'],[16,'초월의 계단'],
+         [21,'신화의 계단'],[26,'종말의 계단'],[30,'전설']]
+};
+
+/* =====================================================================
+   2. 30단계 도감
+   ===================================================================== */
+const DEX = [
+{n:'낡은 용사',   d:'헤진 천 조각을 걸치고 부러진 나뭇가지를 쥔 채 제단 앞에 섰다.',
+ P:{c:'#5f5749',m:'#6e675b',a:'#332e26',g:'#8a8172',s:'#c2a487',hi:'#8d8474'},
+ A:{scale:.84,hunch:6,legs:'bare',torso:'rags',head:'bare',weap:'stick',back:'none',shield:'none',fx:'dust'}},
+{n:'견습 용사',   d:'마을 대장간에서 얻은 낡은 단검. 손잡이가 아직 손에 붙지 않는다.',
+ P:{c:'#7a6a52',m:'#8b8272',a:'#42392b',g:'#a2977f',s:'#c2a487',hi:'#a2977f'},
+ A:{scale:.86,hunch:4,legs:'boot',torso:'tunic',head:'band',weap:'dagger',back:'none',shield:'none'}},
+{n:'떠돌이 용사', d:'후드를 눌러쓰고 이름 없는 길 위를 걷는다. 등짐이 전 재산이다.',
+ P:{c:'#5b6b63',m:'#7d8a80',a:'#33403a',g:'#9db3a6',s:'#c2a487',hi:'#9db3a6'},
+ A:{scale:.88,hunch:3,legs:'boot',torso:'tunic',head:'hood',weap:'short',back:'tatter',shield:'none',fx:'pack'}},
+{n:'수련하는 용사',d:'가죽 조끼와 둥근 방패. 처음으로 남의 검을 받아냈다.',
+ P:{c:'#7a5a4a',m:'#8d7a68',a:'#452f26',g:'#b09080',s:'#c2a487',hi:'#b09080'},
+ A:{scale:.90,hunch:2,legs:'boot',torso:'leather',head:'bare',weap:'short',back:'tatter',shield:'buckler'}},
+{n:'각성한 용사', d:'검끝에서 처음으로 희미한 빛이 돌았다. 무언가가 깨어나고 있다.',
+ P:{c:'#8a6a3a',m:'#a09070',a:'#4f3a1e',g:'#f0cf8c',s:'#c2a487',hi:'#e0c48a'},
+ A:{scale:.92,hunch:1,legs:'leather',torso:'leather',head:'cap',weap:'sword',back:'cloak',shield:'buckler',fx:'spark'}},
+{n:'숙련된 용사', d:'사슬 갑옷의 무게에 익숙해졌다. 숨소리가 고르다.',
+ P:{c:'#4d6b4a',m:'#8a9a80',a:'#2c3f2b',g:'#c2e3a8',s:'#c2a487',hi:'#8fbf7a'},
+ A:{scale:.94,legs:'leather',torso:'chain',head:'cap',weap:'sword',back:'cloak',shield:'kite'}},
+{n:'단련된 용사', d:'투구를 쓰자 시야가 좁아졌지만 두려움도 함께 좁아졌다.',
+ P:{c:'#3f6b52',m:'#93a89a',a:'#26402f',g:'#b6e8c8',s:'#c2a487',hi:'#5fc48d'},
+ A:{scale:.96,legs:'leather',torso:'chain',head:'open',weap:'sword',back:'cloak',shield:'kite'}},
+{n:'정예 용사',   d:'비늘 갑옷 위로 부대의 문장이 새겨졌다. 이제 이름이 불린다.',
+ P:{c:'#2f6b6b',m:'#9db4b8',a:'#1e4245',g:'#b7ecef',s:'#c2a487',hi:'#3fb8c0'},
+ A:{scale:.98,legs:'plate',torso:'scale',head:'open',weap:'long',back:'cape',shield:'kite'}},
+{n:'강철의 용사', d:'온몸을 감싼 판금. 검이 부딪히면 종소리가 난다.',
+ P:{c:'#3a5578',m:'#aebfd0',a:'#22334a',g:'#d4e6f7',s:'#c2a487',hi:'#7fa8d8'},
+ A:{scale:1.0,legs:'plate',torso:'plate',head:'full',weap:'long',back:'cape',shield:'tower'}},
+{n:'백은의 용사', d:'은빛 판금이 달빛을 되쏜다. 첫 관문의 수호자가 길을 막는다.',
+ P:{c:'#54617a',m:'#dfe6ef',a:'#333c50',g:'#ffffff',s:'#c2a487',hi:'#cfd8e6'},
+ A:{scale:1.02,legs:'plate',torso:'plate',head:'plume',weap:'long',back:'cape',shield:'tower',fx:'shine'}},
+{n:'황금의 용사', d:'황금 장식을 두른 대검. 무게가 곧 위엄이 된다.',
+ P:{c:'#6b4f1e',m:'#f0c860',a:'#4a3410',g:'#fff0b8',s:'#c2a487',hi:'#f5c451'},
+ A:{scale:1.04,legs:'plate',torso:'ornate',head:'plume',weap:'great',back:'cape',shield:'tower',fx:'shine'}},
+{n:'불꽃의 용사', d:'검신을 타고 불길이 흐른다. 발밑의 돌이 붉게 익는다.',
+ P:{c:'#7a2a14',m:'#e8873c',a:'#4a160a',g:'#ffd08a',s:'#c2a487',hi:'#ff7a3c'},
+ A:{scale:1.05,legs:'plate',torso:'ornate',head:'horn',weap:'flam',back:'cape',shield:'none',fx:'flame'}},
+{n:'서리의 용사', d:'숨을 쉴 때마다 서리가 인다. 검이 닿은 자리에 얼음이 자란다.',
+ P:{c:'#2a5a7a',m:'#bfe6f5',a:'#1a3a52',g:'#eaffff',s:'#c2a487',hi:'#7cd8f5'},
+ A:{scale:1.06,legs:'plate',torso:'ornate',head:'full',weap:'great',back:'long',shield:'none',fx:'frost'}},
+{n:'폭풍의 용사', d:'창끝에 번개를 묶었다. 구름이 그를 따라다닌다.',
+ P:{c:'#3a3a7a',m:'#c8c8f0',a:'#22224a',g:'#fff08a',s:'#c2a487',hi:'#8f8fff'},
+ A:{scale:1.07,legs:'plate',torso:'ornate',head:'wingh',weap:'spear',back:'long',shield:'none',fx:'bolt'}},
+{n:'대지의 용사', d:'거대한 도끼와 바위 견갑. 한 걸음마다 땅이 울린다.',
+ P:{c:'#5a4a2a',m:'#9ab06a',a:'#38301a',g:'#d8f0a0',s:'#c2a487',hi:'#9ab06a'},
+ A:{scale:1.09,legs:'plate',torso:'ornate',head:'horn',weap:'axe',back:'long',shield:'tower',fx:'stone'}},
+{n:'심연의 용사', d:'얼굴을 가면으로 덮었다. 검이 빛을 삼킨다.',
+ P:{c:'#2a1a44',m:'#6b4aa8',a:'#150c26',g:'#c48aff',s:'#8a7aa0',hi:'#a06aff'},
+ A:{scale:1.10,legs:'plate',torso:'void',head:'mask',weap:'void',back:'long',shield:'none',fx:'void'}},
+{n:'여명의 용사', d:'어둠을 건너온 자에게만 아침이 온다. 갑옷이 옅게 빛난다.',
+ P:{c:'#6b4a7a',m:'#f0d8b0',a:'#402c4a',g:'#fff4d0',s:'#c2a487',hi:'#e8b8f0'},
+ A:{scale:1.11,legs:'ornate',torso:'ornate',head:'wingh',weap:'holy',back:'banner',shield:'none',fx:'rays'}},
+{n:'성기사 용사', d:'맹세를 새긴 방패. 물러서지 않겠다는 약속이 갑옷이 되었다.',
+ P:{c:'#4a5a8a',m:'#f5f0e0',a:'#2e3a5a',g:'#ffffff',s:'#c2a487',hi:'#d8e4ff'},
+ A:{scale:1.12,legs:'ornate',torso:'divine',head:'plume',weap:'holy',back:'banner',shield:'holy',fx:'rays'}},
+{n:'용을 벤 용사',d:'투구의 뿔은 그가 벤 용의 것이다. 대검에 비늘 자국이 남았다.',
+ P:{c:'#7a1a2a',m:'#e8b45c',a:'#4a0e18',g:'#ffcf8a',s:'#c2a487',hi:'#e5484d'},
+ A:{scale:1.13,legs:'ornate',torso:'ornate',head:'horn',weap:'great',back:'long',shield:'none',fx:'dragon'}},
+{n:'마검의 용사', d:'두 자루의 마검이 서로를 부른다. 손을 놓아도 떨어지지 않는다.',
+ P:{c:'#1a1030',m:'#8a5ad8',a:'#0e0820',g:'#d8a0ff',s:'#a894c0',hi:'#a06aff'},
+ A:{scale:1.14,legs:'ornate',torso:'void',head:'mask',weap:'twin',back:'long',shield:'none',fx:'rune'}},
+{n:'왕국의 용사', d:'왕관을 얹은 투구. 한 나라의 무게를 어깨로 받는다.',
+ P:{c:'#1e3a7a',m:'#f5d070',a:'#122349',g:'#fff2b8',s:'#c2a487',hi:'#f5c451'},
+ A:{scale:1.15,legs:'ornate',torso:'ornate',head:'crown',weap:'holy',back:'banner',shield:'holy',fx:'orb'}},
+{n:'대륙의 용사', d:'대륙 전체가 그의 이름을 안다. 대검 하나로 국경이 그어졌다.',
+ P:{c:'#12563f',m:'#f0d888',a:'#0a3325',g:'#c8ffdf',s:'#c2a487',hi:'#3ddc97'},
+ A:{scale:1.16,legs:'ornate',torso:'ornate',head:'crown',weap:'great',back:'banner',shield:'none',fx:'orb'}},
+{n:'초월한 용사', d:'발이 땅에서 떨어졌다. 검은 손에 쥐지 않아도 곁을 돈다.',
+ P:{c:'#0e4a5a',m:'#a8f0ff',a:'#07303a',g:'#ffffff',s:'#d8e8f0',hi:'#5fe6ff'},
+ A:{scale:1.17,float:8,legs:'divine',torso:'divine',head:'halo',weap:'star',back:'ring',shield:'none',fx:'orb'}},
+{n:'영웅 용사',   d:'노래로 불리는 이름. 빛이 그를 따라 형태를 만든다.',
+ P:{c:'#7a3a1a',m:'#ffd8a0',a:'#4a2010',g:'#fff0d0',s:'#c2a487',hi:'#ff9558'},
+ A:{scale:1.18,legs:'divine',torso:'divine',head:'plumehalo',weap:'holy',back:'capering',shield:'holy',fx:'rays'}},
+{n:'반신의 용사', d:'인간의 경계를 넘었다. 등 뒤로 빛의 날개가 돋는다.',
+ P:{c:'#3a2a6b',m:'#f0e8ff',a:'#221a44',g:'#ffffff',s:'#e0d8f0',hi:'#c4a8ff'},
+ A:{scale:1.19,float:10,legs:'divine',torso:'divine',head:'halo',weap:'star',back:'wing2',shield:'none',fx:'star'}},
+{n:'신좌의 용사', d:'네 장의 날개가 옥좌를 대신한다. 아래를 내려다볼 뿐이다.',
+ P:{c:'#6b5a1a',m:'#fff4c0',a:'#443610',g:'#ffffff',s:'#f0e8d0',hi:'#f5e08a'},
+ A:{scale:1.20,float:12,legs:'divine',torso:'divine',head:'halo',weap:'star',back:'wing4',shield:'none',fx:'star'}},
+{n:'창천의 용사', d:'하늘이 그의 영역이 되었다. 구름이 발판처럼 모인다.',
+ P:{c:'#1a5a8a',m:'#e0f4ff',a:'#0e3a5a',g:'#ffffff',s:'#e8f4ff',hi:'#7cc5ff'},
+ A:{scale:1.21,float:12,legs:'divine',torso:'divine',head:'wingh',weap:'lance',back:'wing4',shield:'none',fx:'cloud'}},
+{n:'종말의 용사', d:'끝을 알리는 자. 지나간 자리에는 아무것도 남지 않는다.',
+ P:{c:'#1a0a12',m:'#ff4a5a',a:'#0a0408',g:'#ff8a9a',s:'#9a8090',hi:'#e5484d'},
+ A:{scale:1.22,float:12,legs:'divine',torso:'void',head:'maskhalo',weap:'twinvoid',back:'wing4dark',shield:'none',fx:'void2'}},
+{n:'태초의 용사', d:'모든 이야기의 첫 문장. 여섯 날개가 시간을 가른다. 앞에는 전설의 용이 있다.',
+ P:{c:'#2a4a6b',m:'#f0ffff',a:'#16304a',g:'#ffffff',s:'#f0f8ff',hi:'#a8f0ff'},
+ A:{scale:1.23,float:14,legs:'divine',torso:'divine',head:'halo',weap:'star',back:'wing6',shield:'none',fx:'aurora'}},
+{n:'전설의 용사', d:'더 오를 곳이 없다. 이름 대신 전설이라 불린다.',
+ P:{c:'#6b4a0a',m:'#ffe89a',a:'#3a2600',g:'#ffffff',s:'#fff0d8',hi:'#f5c451'},
+ A:{scale:1.26,float:14,legs:'divine',torso:'divine',head:'crownhalo',weap:'legend',back:'wing6ring',shield:'holy',fx:'legend'}}
+];
+
+/* =====================================================================
+   3. 무기 도감 (실패 보상 · 1회용)
+   ===================================================================== */
+const WEAPONS = [
+ {n:'녹슨 단검',      p:40,    c:'#8a8272', g:'#b8ae99', s:'dagger'},
+ {n:'사냥꾼 손도끼',  p:70,    c:'#9a8a68', g:'#c8b88a', s:'axe'},
+ {n:'강철 장검',      p:110,   c:'#aebfd0', g:'#dce8f5', s:'sword'},
+ {n:'은빛 세이버',    p:170,   c:'#dfe6ef', g:'#ffffff', s:'saber'},
+ {n:'룬 각인 대검',   p:260,   c:'#9db4b8', g:'#8ff0ff', s:'great'},
+ {n:'화염의 클레이모어',p:390, c:'#e8873c', g:'#ffd08a', s:'great'},
+ {n:'서리의 할버드',  p:580,   c:'#bfe6f5', g:'#eaffff', s:'halberd'},
+ {n:'뇌전의 창',      p:860,   c:'#c8c8f0', g:'#fff08a', s:'spear'},
+ {n:'대지의 전쟁도끼',p:1270,  c:'#9ab06a', g:'#d8f0a0', s:'axe'},
+ {n:'심연의 마검',    p:1880,  c:'#6b4aa8', g:'#c48aff', s:'void'},
+ {n:'여명의 성검',    p:2780,  c:'#f0d8b0', g:'#fff4d0', s:'holy'},
+ {n:'용살의 대검',    p:4100,  c:'#e8b45c', g:'#ffcf8a', s:'great'},
+ {n:'왕가의 보검',    p:6000,  c:'#f5d070', g:'#fff2b8', s:'holy'},
+ {n:'천공의 랜스',    p:8900,  c:'#e0f4ff', g:'#7cc5ff', s:'spear'},
+ {n:'태초의 검',      p:13000, c:'#f0ffff', g:'#ffffff', s:'legend'},
+ {n:'일반 단검',      p:240,   c:'#9aa0a8', g:'#c8ccd2', s:'dagger'},  /* 15: 상점 전용, 드랍되지 않음 */
+ {n:'전설의 검',      p:999999,c:'#fff9d0', g:'#ffd94a', s:'legend'}   /* 16: 26강+ 실패시 초저확률 드랍, 모든 대결 100% */
+];
+/* 실패한 단계 → 무기 등급 (0~14). 15=상점 단검, 16=전설의 검(드랍 전용) */
+function weaponGradeFor(lv){ return Math.max(0, Math.min(14, Math.floor((lv - 1) / 2))); }
+const SHOP_DAGGER_GRADE = 15;
+const LEGENDARY_GRADE = 16;
+
+/* 관문별 검 등급 승률표. byGrade[i] = (i+1)급(WEAPONS 인덱스 i)의 승률(%).
+   맨손·상점 단검은 별도 고정값, 전설의 검은 어디서나 100%. */
+const WIN_TABLE = {
+  9:  { bare:5, dagger:50, byGrade:[11,17,23,29,35,41,47,53,59,65,71,77,83,89,95] },
+  14: { bare:5, dagger:15, byGrade:[11,16,22,28,33,39,45,50,56,62,67,73,79,84,90] },
+  19: { bare:5, dagger:8,  byGrade:[10,15,20,25,30,35,40,45,50,55,60,65,70,75,80] },
+  24: { bare:5, dagger:5,  byGrade:[9,13,17,21,25,29,33,37,41,45,49,53,57,61,65] },
+  29: { bare:3, dagger:5,  byGrade:[5,8,10,13,15,18,20,23,25,28,30,33,35,38,40] }
+};
+function winChanceFor(gateLv, grade){
+  const T=WIN_TABLE[gateLv];
+  if(grade===LEGENDARY_GRADE) return 100;
+  if(grade==null) return T.bare;
+  if(grade===SHOP_DAGGER_GRADE) return T.dagger;
+  return T.byGrade[grade];
+}
+
+/* 검 조합: 같은 등급(인덱스 0~12, 1~13급)을 모아 상위 등급 획득 시도.
+   9급까지는 2자루, 10급부터는 3자루 필요. 14급(천공의 랜스) 이상은 조합 불가(태초의 검 제외). */
+const COMBINE_SUCCESS=[50,47,44,41,38,35,32,29,26,23,20,17,14]; // index0(1급)~12(13급), 최대 50%
+function combineNeed(g){ return g<=8?2:3; }
+function combinable(g){ return g>=0 && g<=12; }
+
+/* 작은 무기 아이콘 */
+function weaponIcon(gi){
+  const W = WEAPONS[gi];
+  const P = {c:W.c, g:W.g};
+  const body = {
+    dagger:`<path d="M20 12 L26 22 L26 46 L14 46 L14 22 Z" fill="${P.c}"/><rect x="8" y="46" width="24" height="5" rx="2" fill="${P.g}"/><rect x="17" y="51" width="6" height="12" rx="3" fill="#3a3226"/>`,
+    sword:`<path d="M20 4 L27 18 L27 48 L13 48 L13 18 Z" fill="${P.c}"/><rect x="6" y="48" width="28" height="5" rx="2" fill="${P.g}"/><rect x="17" y="53" width="6" height="13" rx="3" fill="#3a3226"/>`,
+    saber:`<path d="M28 4 q-14 20 -10 44 l-10 0 q-4 -26 12 -44z" fill="${P.c}"/><rect x="6" y="48" width="26" height="5" rx="2" fill="${P.g}"/>`,
+    great:`<path d="M20 2 L30 16 L30 48 L10 48 L10 16 Z" fill="${P.c}"/><rect x="3" y="48" width="34" height="6" rx="3" fill="${P.g}"/><rect x="17" y="54" width="6" height="14" rx="3" fill="#3a3226"/>`,
+    axe:`<rect x="17" y="6" width="6" height="60" rx="3" fill="#3a3226"/><path d="M17 14 q-14 2 -16 16 q10 -4 16 -3z" fill="${P.c}"/><path d="M23 14 q14 2 16 16 q-10 -4 -16 -3z" fill="${P.c}"/>`,
+    spear:`<rect x="17.5" y="18" width="5" height="50" rx="2" fill="#3a3226"/><path d="M20 2 L28 18 L20 24 L12 18 Z" fill="${P.c}"/><path d="M12 22 h16 v4 h-16z" fill="${P.g}"/>`,
+    halberd:`<rect x="17.5" y="14" width="5" height="54" rx="2" fill="#3a3226"/><path d="M20 2 L26 14 L20 20 L14 14 Z" fill="${P.c}"/><path d="M22 16 q14 2 14 14 q-10 -4 -14 -2z" fill="${P.c}"/>`,
+    void:`<path d="M20 2 L29 18 L29 48 L11 48 L11 18 Z" fill="#150c26" stroke="${P.c}" stroke-width="2"/><path d="M20 6 L20 46" stroke="${P.g}" stroke-width="2"/><rect x="5" y="48" width="30" height="5" rx="2" fill="${P.c}"/>`,
+    holy:`<path d="M20 2 L28 16 L28 46 L12 46 L12 16 Z" fill="${P.c}"/><path d="M20 4 L20 46" stroke="${P.g}" stroke-width="2.5"/><rect x="3" y="46" width="34" height="6" rx="3" fill="${P.g}"/><circle cx="20" cy="60" r="4" fill="${P.g}"/>`,
+    legend:`<path d="M20 0 L30 14 L30 46 L10 46 L10 14 Z" fill="${P.c}"/><path d="M20 2 L20 46" stroke="#fff" stroke-width="2.5"/><rect x="2" y="46" width="36" height="7" rx="3" fill="${P.g}"/><circle cx="20" cy="62" r="5" fill="${P.g}"/><path d="M20 16 l2 6 6 2 -6 2 -2 6 -2 -6 -6 -2 6 -2z" fill="#fff"/>`
+  }[W.s];
+  return `<svg viewBox="0 0 40 70" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+}
+
+/* =====================================================================
+   4. 대결 관문 & 몬스터
+   ===================================================================== */
+const GATES = {
+ 9:{n:'폐허의 오우거', p:300,   reward:20000,     d:'무너진 성문에 눌러앉아 지나가는 자를 부순다. 곤봉 한 번에 방패가 접힌다.', art:'ogre'},
+ 14:{n:'흑염의 키메라', p:1200,  reward:2000000,   d:'세 개의 목이 각자 다른 방향을 노린다. 숨결이 닿은 자리는 재가 된다.', art:'chimera'},
+ 19:{n:'심연의 리치',   p:4500,  reward:20000000,  d:'죽음을 거절한 대마법사. 지팡이 끝에서 잊힌 이름들이 새어 나온다.', art:'lich'},
+ 24:{n:'천공의 타이탄', p:14000, reward:150000000, d:'하늘을 떠받치던 거인. 팔 한 짝이 산맥만 하다.', art:'titan'},
+ 29:{n:'전설의 용',     p:55000, reward:800000000, d:'모든 이야기의 마지막 장에 있는 존재. 이 용을 넘어야 전설이 된다. 약한 무기로는 승산이 거의 없다.', art:'dragon'}
+};
+const GATE_LVS = [9,14,19,24,29];
+const isGate = lv => !!GATES[lv];
+
+const MONSTER_ART = {
+ogre(){return `
+ <ellipse cx="100" cy="150" rx="52" ry="40" fill="#5a6b4a"/>
+ <path d="M62 130 q-20 10 -18 34 q14 -4 22 -14z" fill="#4a5a3c"/>
+ <path d="M138 130 q20 10 18 34 q-14 -4 -22 -14z" fill="#4a5a3c"/>
+ <ellipse cx="100" cy="86" rx="34" ry="30" fill="#6b7a56"/>
+ <path d="M84 96 q16 10 32 0 q-4 12 -16 12 q-12 0 -16 -12z" fill="#3a4430"/>
+ <path d="M88 106 l4 10 4 -10z M112 106 l-4 10 -4 -10z" fill="#f0ecd8"/>
+ <circle cx="88" cy="80" r="5" fill="#f5c451"/><circle cx="112" cy="80" r="5" fill="#f5c451"/>
+ <circle cx="88" cy="80" r="2" fill="#2a1f10"/><circle cx="112" cy="80" r="2" fill="#2a1f10"/>
+ <path d="M66 66 q-10 -14 2 -22 q6 10 12 12z" fill="#6b7a56"/>
+ <rect x="150" y="60" width="12" height="110" rx="6" fill="#5a4632"/>
+ <path d="M156 48 q-22 2 -22 22 q0 18 22 20 q22 -2 22 -20 q0 -20 -22 -22z" fill="#6b5642"/>
+ <circle cx="146" cy="62" r="4" fill="#3a2c1e"/><circle cx="166" cy="72" r="4" fill="#3a2c1e"/>
+ <ellipse cx="100" cy="192" rx="60" ry="9" fill="#000" opacity=".4"/>`;},
+chimera(){return `
+ <path d="M40 160 q60 -30 120 0 q-10 26 -60 26 q-50 0 -60 -26z" fill="#3a2030"/>
+ <ellipse cx="100" cy="132" rx="54" ry="34" fill="#4a2438"/>
+ <path d="M158 148 q28 -8 34 16 q-20 2 -34 -6z" fill="#3a2030"/>
+ <!-- 왼쪽 머리 (사자) -->
+ <circle cx="56" cy="96" r="24" fill="#7a3a2a"/>
+ <circle cx="56" cy="96" r="16" fill="#a05a3a"/>
+ <circle cx="50" cy="92" r="3.4" fill="#ffd08a"/><circle cx="62" cy="92" r="3.4" fill="#ffd08a"/>
+ <path d="M48 104 q8 6 16 0 q-4 8 -8 8 q-4 0 -8 -8z" fill="#2a140e"/>
+ <!-- 가운데 머리 (용) -->
+ <path d="M100 44 q22 0 22 22 q0 24 -22 30 q-22 -6 -22 -30 q0 -22 22 -22z" fill="#6b2a4a"/>
+ <path d="M84 44 q-8 -18 2 -26 q6 12 12 16z M116 44 q8 -18 -2 -26 q-6 12 -12 16z" fill="#e5484d"/>
+ <circle cx="91" cy="66" r="4" fill="#ff8a4a"/><circle cx="109" cy="66" r="4" fill="#ff8a4a"/>
+ <path d="M86 84 q14 8 28 0 q-6 10 -14 10 q-8 0 -14 -10z" fill="#2a0e1a"/>
+ <!-- 오른쪽 머리 (뱀) -->
+ <path d="M144 100 q20 -10 26 6 q6 16 -12 20 q-18 2 -20 -12z" fill="#3a6b4a"/>
+ <circle cx="156" cy="106" r="3.4" fill="#c8ff8a"/>
+ <path d="M170 116 l14 6 -14 4z" fill="#c8ff8a"/>
+ <path d="M100 96 q-6 20 0 40" stroke="#ff8a4a" stroke-width="3" fill="none" opacity=".5"/>
+ <ellipse cx="100" cy="192" rx="66" ry="10" fill="#000" opacity=".4"/>`;},
+lich(){return `
+ <path d="M100 40 q-46 24 -46 90 q0 34 46 40 q46 -6 46 -40 q0 -66 -46 -90z" fill="#241a3a"/>
+ <path d="M100 40 q-46 24 -46 90 q0 34 46 40 q46 -6 46 -40 q0 -66 -46 -90z" fill="none" stroke="#7a5ad8" stroke-width="2"/>
+ <path d="M100 34 q-26 0 -26 26 q0 18 10 24 l-4 12 h40 l-4 -12 q10 -6 10 -24 q0 -26 -26 -26z" fill="#e8e4d8"/>
+ <ellipse cx="90" cy="60" rx="6" ry="8" fill="#0a0912"/><ellipse cx="110" cy="60" rx="6" ry="8" fill="#0a0912"/>
+ <circle cx="90" cy="60" r="3" fill="#a06aff"/><circle cx="110" cy="60" r="3" fill="#a06aff"/>
+ <path d="M92 78 h16 M94 84 h12" stroke="#8a8272" stroke-width="2"/>
+ <path d="M74 24 q26 -16 52 0 q-14 -4 -26 -4 q-12 0 -26 4z" fill="#7a5ad8" opacity=".7"/>
+ <rect x="156" y="30" width="7" height="150" rx="3" fill="#3a2c4a"/>
+ <circle cx="159.5" cy="26" r="15" fill="none" stroke="#a06aff" stroke-width="4"/>
+ <circle cx="159.5" cy="26" r="8" fill="#c48aff" opacity=".85"/>
+ <g opacity=".7">
+  <circle cx="46" cy="70" r="3" fill="#a06aff"/><circle cx="62" cy="150" r="2.5" fill="#a06aff"/>
+  <circle cx="150" cy="120" r="2.5" fill="#a06aff"/><circle cx="40" cy="120" r="2" fill="#c48aff"/>
+ </g>
+ <ellipse cx="100" cy="188" rx="58" ry="9" fill="#a06aff" opacity=".2"/>`;},
+titan(){return `
+ <rect x="66" y="88" width="68" height="76" rx="10" fill="#6b6e78"/>
+ <rect x="66" y="88" width="68" height="76" rx="10" fill="none" stroke="#8f939e" stroke-width="2"/>
+ <circle cx="100" cy="126" r="16" fill="#7cd8f5" opacity=".9"/>
+ <circle cx="100" cy="126" r="8" fill="#ffffff"/>
+ <rect x="26" y="94" width="34" height="80" rx="10" fill="#5a5d66"/>
+ <rect x="140" y="94" width="34" height="80" rx="10" fill="#5a5d66"/>
+ <rect x="20" y="150" width="46" height="34" rx="10" fill="#6b6e78"/>
+ <rect x="134" y="150" width="46" height="34" rx="10" fill="#6b6e78"/>
+ <rect x="76" y="40" width="48" height="42" rx="10" fill="#7a7e88"/>
+ <rect x="84" y="56" width="32" height="9" rx="4" fill="#0f1420"/>
+ <circle cx="92" cy="60.5" r="3.4" fill="#7cd8f5"/><circle cx="108" cy="60.5" r="3.4" fill="#7cd8f5"/>
+ <path d="M76 40 l10 -16 8 16z M124 40 l-10 -16 -8 16z" fill="#8f939e"/>
+ <path d="M66 104 h68 M66 140 h68" stroke="#4a4d55" stroke-width="3"/>
+ <ellipse cx="100" cy="192" rx="76" ry="10" fill="#000" opacity=".45"/>
+ <path d="M18 194 l12 -10 10 12z M164 196 l14 -12 12 14z" fill="#5a5d66"/>`;},
+dragon(){return `
+ <path d="M96 120 q-70 -60 -92 -24 q26 6 40 22 q-24 4 -34 22 q30 8 50 -2 q-16 16 -14 36 q30 -10 44 -36z" fill="#7a1a2a"/>
+ <path d="M104 120 q70 -60 92 -24 q-26 6 -40 22 q24 4 34 22 q-30 8 -50 -2 q16 16 14 36 q-30 -10 -44 -36z" fill="#7a1a2a"/>
+ <path d="M96 120 q-60 -50 -80 -22 q24 6 38 20 q-20 4 -28 20 q26 6 44 -4z" fill="#a82a3a" opacity=".85"/>
+ <path d="M104 120 q60 -50 80 -22 q-24 6 -38 20 q20 4 28 20 q-26 6 -44 -4z" fill="#a82a3a" opacity=".85"/>
+ <path d="M100 96 q-24 6 -24 40 q0 34 24 44 q24 -10 24 -44 q0 -34 -24 -40z" fill="#5a1220"/>
+ <path d="M100 108 q-12 6 -12 30 q0 22 12 30 q12 -8 12 -30 q0 -24 -12 -30z" fill="#e8b45c" opacity=".55"/>
+ <path d="M100 96 q-14 -18 -6 -40 q4 -22 24 -26 q-10 12 -6 24 q4 14 -12 42z" fill="#7a1a2a"/>
+ <path d="M112 26 q26 -6 34 14 q4 14 -12 20 q-16 6 -26 -6 q-8 -12 4 -28z" fill="#8f2030"/>
+ <path d="M146 42 q14 2 18 12 q-14 4 -22 -2z" fill="#8f2030"/>
+ <circle cx="132" cy="40" r="5.5" fill="#f5c451"/><ellipse cx="132" cy="40" rx="2" ry="5" fill="#2a0a0e"/>
+ <path d="M118 24 q-10 -18 4 -26 q2 12 10 18z M132 20 q-4 -20 12 -24 q-4 12 0 20z" fill="#e8b45c"/>
+ <path d="M150 56 l16 4 -14 6z" fill="#ffcf8a"/>
+ <path d="M158 58 q26 -4 40 10 q-24 6 -40 0z" fill="#ff9558" opacity=".45"/>
+ <path d="M100 178 q-8 24 -34 30 q-20 4 -28 -10 q16 2 26 -6 q12 -10 16 -26z" fill="#7a1a2a"/>
+ <ellipse cx="100" cy="200" rx="70" ry="10" fill="#000" opacity=".45"/>`;}
+};
+/* 몬스터 일러스트 렌더러.
+   커스텀 이미지(images/monster-N.png)가 있으면 그것을, 없으면 내장 SVG를 사용한다.
+   glv: 관문 단계(9/14/19/24/29), art: 내장 SVG 키 */
+function monsterVisual(glv, art){
+  const file = ASSETS.monster[glv];
+  if(assetReady(file)){
+    return `<img class="monImg" src="${assetUrl(file)}" alt="${art}">`;
+  }
+  probeAsset(file, ()=>{ if(S.gate!==null && $('modal').classList.contains('open')) renderDuel(); });
+  return monsterSVG(art);
+}
+function monsterSVG(art){
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${MONSTER_ART[art]()}</svg>`;
+}
+
+/* =====================================================================
+   5. 용사 일러스트 부품
+   ===================================================================== */
+const ART = {
+legs(v,P){
+  const boot=(x)=>`<path d="M${x} 206 h24 q5 0 5 6 v8 h-32 v-8 q0 -6 3 -6z" fill="${P.a}"/>`;
+  switch(v){
+    case 'bare': return `
+      <path d="M88 164 L83 208 L95 210 L97 164Z" fill="${P.s}"/>
+      <path d="M112 164 L117 208 L105 210 L103 164Z" fill="${P.s}"/>
+      <path d="M84 186 h13 v5 h-13z M103 190 h13 v5 h-13z" fill="${P.c}" opacity=".8"/>
+      ${boot(75)}${boot(101)}`;
+    case 'boot': return `
+      <path d="M87 164 L83 200 L96 202 L97 164Z" fill="${P.c}"/>
+      <path d="M113 164 L117 200 L104 202 L103 164Z" fill="${P.c}"/>
+      <path d="M79 196 h24 v18 q0 4-4 4 h-16 q-4 0-4-4z" fill="${P.a}"/>
+      <path d="M101 196 h24 v18 q0 4-4 4 h-16 q-4 0-4-4z" fill="${P.a}"/>`;
+    case 'leather': return `
+      <path d="M86 162 L82 200 L96 202 L97 162Z" fill="${P.a}"/>
+      <path d="M114 162 L118 200 L104 202 L103 162Z" fill="${P.a}"/>
+      <path d="M78 194 h26 v22 q0 4-4 4 h-18 q-4 0-4-4z" fill="${P.c}"/>
+      <path d="M100 194 h26 v22 q0 4-4 4 h-18 q-4 0-4-4z" fill="${P.c}"/>
+      <rect x="78" y="200" width="26" height="4" fill="${P.m}" opacity=".7"/>
+      <rect x="100" y="200" width="26" height="4" fill="${P.m}" opacity=".7"/>`;
+    case 'plate': return `
+      <path d="M85 160 L80 198 L97 200 L98 160Z" fill="${P.a}"/>
+      <path d="M115 160 L120 198 L103 200 L102 160Z" fill="${P.a}"/>
+      <path d="M77 190 h28 v14 h-28z" fill="${P.m}"/><path d="M95 190 h28 v14 h-28z" fill="${P.m}"/>
+      <path d="M74 202 h32 q4 0 4 5 v11 h-36z" fill="${P.m}"/>
+      <path d="M94 202 h32 q4 0 4 5 v11 h-36z" fill="${P.m}"/>
+      <path d="M74 214 h36 v4 h-36z M94 214 h36 v4 h-36z" fill="${P.a}"/>`;
+    case 'ornate': return `${ART.legs('plate',P)}
+      <path d="M80 194 h22 v3 h-22z M98 194 h22 v3 h-22z" fill="${P.g}" opacity=".85"/>
+      <circle cx="88" cy="209" r="3" fill="${P.g}"/><circle cx="112" cy="209" r="3" fill="${P.g}"/>`;
+    case 'divine': return `
+      <path d="M86 160 L81 196 L97 198 L98 160Z" fill="${P.m}"/>
+      <path d="M114 160 L119 196 L103 198 L102 160Z" fill="${P.m}"/>
+      <path d="M76 190 h30 q4 0 4 6 v16 q0 5-5 5 h-24 q-5 0-5-5z" fill="${P.m}"/>
+      <path d="M94 190 h30 q4 0 4 6 v16 q0 5-5 5 h-24 q-5 0-5-5z" fill="${P.m}"/>
+      <path d="M80 196 h22 v3 h-22z M98 196 h22 v3 h-22z" fill="${P.g}"/>
+      <ellipse cx="100" cy="222" rx="40" ry="7" fill="${P.g}" opacity=".35"/>`;
+  } return '';
+},
+torso(v,P){
+  const pauldron=`<path d="M74 96 q-12 4 -12 16 q0 8 6 11 l16 -7 z" fill="${P.m}"/>
+                  <path d="M126 96 q12 4 12 16 q0 8 -6 11 l-16 -7 z" fill="${P.m}"/>`;
+  switch(v){
+    case 'rags': return `
+      <path d="M100 86 L124 98 L118 146 L124 168 L110 156 L100 174 L90 156 L76 168 L82 146 L76 98 Z" fill="${P.c}"/>
+      <path d="M100 86 L100 168" stroke="${P.a}" stroke-width="2" opacity=".55"/>
+      <path d="M84 120 l10 6 -10 5z M116 132 l-10 5 10 6z" fill="${P.a}" opacity=".7"/>
+      <path d="M76 106 q24 8 48 0" stroke="${P.a}" stroke-width="3" fill="none" opacity=".6"/>`;
+    case 'tunic': return `
+      <path d="M100 86 L123 98 L119 152 L111 168 L89 168 L81 152 L77 98 Z" fill="${P.c}"/>
+      <path d="M77 140 h46 v8 h-46z" fill="${P.a}"/><path d="M96 140 h8 v8 h-8z" fill="${P.m}"/>
+      <path d="M100 88 L92 104 L100 116 L108 104 Z" fill="${P.a}" opacity=".55"/>`;
+    case 'leather': return `
+      <path d="M100 84 L125 97 L121 152 L112 170 L88 170 L79 152 L75 97 Z" fill="${P.c}"/>
+      <path d="M75 138 h50 v9 h-50z" fill="${P.a}"/><rect x="95" y="137" width="10" height="11" rx="2" fill="${P.m}"/>
+      <path d="M84 96 L116 130 M116 96 L84 130" stroke="${P.a}" stroke-width="4" opacity=".55"/>
+      <path d="M75 97 q-9 6 -8 18 l14 4z" fill="${P.a}"/><path d="M125 97 q9 6 8 18 l-14 4z" fill="${P.a}"/>`;
+    case 'chain': return `
+      <path d="M100 84 L126 97 L122 152 L112 170 L88 170 L78 152 L74 97 Z" fill="${P.a}"/>
+      <g fill="${P.m}" opacity=".85">${(()=>{let s='';for(let y=94;y<166;y+=8){for(let x=78;x<124;x+=8){
+        const dx=(Math.floor((y-94)/8)%2)*4;s+=`<circle cx="${x+dx}" cy="${y}" r="2.6"/>`;}}return s;})()}</g>
+      <path d="M74 140 h52 v8 h-52z" fill="${P.c}"/>${pauldron}`;
+    case 'scale': return `
+      <path d="M100 82 L128 96 L124 152 L113 172 L87 172 L76 152 L72 96 Z" fill="${P.a}"/>
+      <g fill="${P.m}">${(()=>{let s='';for(let r=0;r<9;r++){const y=94+r*9;
+        for(let x=78;x<124;x+=10){const dx=(r%2)*5;
+        s+=`<path d="M${x+dx} ${y} q5 0 5 6 q0 5-5 5 q-5 0-5-5 q0-6 5-6z" opacity=".9"/>`;}}return s;})()}</g>
+      <path d="M72 138 h56 v9 h-56z" fill="${P.c}"/>
+      <path d="M100 100 L108 118 L100 132 L92 118 Z" fill="${P.g}" opacity=".8"/>${pauldron}`;
+    case 'plate': return `
+      <path d="M100 80 L130 95 L126 150 L114 174 L86 174 L74 150 L70 95 Z" fill="${P.m}"/>
+      <path d="M100 96 L100 168" stroke="${P.a}" stroke-width="2.5" opacity=".6"/>
+      <path d="M78 104 q22 12 44 0" stroke="${P.a}" stroke-width="3" fill="none" opacity=".55"/>
+      <path d="M80 122 q20 10 40 0" stroke="${P.a}" stroke-width="3" fill="none" opacity=".45"/>
+      <path d="M74 142 h52 v10 h-52z" fill="${P.a}"/>
+      <rect x="94" y="140" width="12" height="14" rx="3" fill="${P.c}"/>${pauldron}`;
+    case 'ornate': return `${ART.torso('plate',P)}
+      <path d="M100 92 L112 112 L100 134 L88 112 Z" fill="${P.g}"/>
+      <path d="M100 100 L106 112 L100 124 L94 112 Z" fill="${P.a}" opacity=".55"/>
+      <path d="M70 95 L100 80 L130 95" stroke="${P.g}" stroke-width="3" fill="none"/>
+      <path d="M74 150 h52 v3 h-52z" fill="${P.g}"/>
+      <path d="M62 104 q6 -10 14 -8 M138 104 q-6 -10 -14 -8" stroke="${P.g}" stroke-width="3" fill="none"/>`;
+    case 'divine': return `
+      <path d="M100 78 L132 94 L128 150 L115 176 L85 176 L72 150 L68 94 Z" fill="${P.m}"/>
+      <path d="M100 78 L132 94 L128 150 L115 176 L85 176 L72 150 L68 94 Z" fill="none" stroke="${P.g}" stroke-width="2"/>
+      <path d="M100 90 L100 172" stroke="${P.g}" stroke-width="2.5"/>
+      <path d="M80 108 q20 12 40 0 M82 128 q18 10 36 0" stroke="${P.g}" stroke-width="2.5" fill="none" opacity=".9"/>
+      <circle cx="100" cy="118" r="11" fill="${P.g}"/><circle cx="100" cy="118" r="5" fill="${P.c}"/>
+      <path d="M72 96 q-14 4 -14 18 q0 9 7 13 l18 -8 z" fill="${P.m}" stroke="${P.g}" stroke-width="1.5"/>
+      <path d="M128 96 q14 4 14 18 q0 9 -7 13 l-18 -8 z" fill="${P.m}" stroke="${P.g}" stroke-width="1.5"/>
+      <path d="M72 148 h56 v4 h-56z" fill="${P.g}"/>`;
+    case 'void': return `
+      <path d="M100 80 L130 95 L126 150 L114 174 L86 174 L74 150 L70 95 Z" fill="${P.a}"/>
+      <path d="M100 80 L130 95 L126 150 L114 174 L86 174 L74 150 L70 95 Z" fill="none" stroke="${P.m}" stroke-width="2"/>
+      <path d="M100 88 L92 116 L104 120 L94 152 M100 88 L110 110 L100 118" stroke="${P.g}" stroke-width="2.5" fill="none"/>
+      <circle cx="100" cy="124" r="8" fill="${P.g}" opacity=".8"/>
+      <path d="M70 95 q-13 5 -13 18 q0 8 6 12 l17 -8 z" fill="${P.a}" stroke="${P.m}" stroke-width="1.5"/>
+      <path d="M130 95 q13 5 13 18 q0 8 -6 12 l-17 -8 z" fill="${P.a}" stroke="${P.m}" stroke-width="1.5"/>`;
+  } return '';
+},
+head(v,P){
+  const face=`<ellipse cx="100" cy="62" rx="17" ry="19" fill="${P.s}"/>`;
+  const eyes=`<circle cx="93" cy="62" r="2" fill="#2a1f18"/><circle cx="107" cy="62" r="2" fill="#2a1f18"/>`;
+  const dome=`<path d="M100 32 q22 0 22 22 v10 q0 14 -22 14 q-22 0 -22 -14 v-10 q0 -22 22 -22z" fill="${P.m}"/>`;
+  const visor=`<rect x="84" y="56" width="32" height="8" rx="4" fill="${P.a}"/>
+               <circle cx="92" cy="60" r="2.6" fill="${P.g}"/><circle cx="108" cy="60" r="2.6" fill="${P.g}"/>`;
+  const halo=`<ellipse cx="100" cy="26" rx="26" ry="7" fill="none" stroke="${P.g}" stroke-width="3.5" opacity=".95"/>
+              <ellipse cx="100" cy="26" rx="26" ry="7" fill="none" stroke="#fff" stroke-width="1" opacity=".7"/>`;
+  const crown=`<path d="M78 34 L84 18 L92 30 L100 12 L108 30 L116 18 L122 34 L122 40 L78 40 Z" fill="${P.g}"/>
+               <circle cx="100" cy="24" r="3" fill="#fff"/>`;
+  const wingh=`<path d="M78 48 q-16 -6 -22 4 q12 2 20 8z" fill="${P.g}"/>
+               <path d="M122 48 q16 -6 22 4 q-12 2 -20 8z" fill="${P.g}"/>`;
+  switch(v){
+    case 'bare': return `<path d="M100 40 q-18 0 -18 16 l4 4 q4 -10 14 -10 q10 0 14 10 l4 -4 q0 -16 -18 -16z" fill="${P.a}"/>${face}${eyes}
+      <path d="M82 52 q6 -14 18 -14 q12 0 18 14 q-8 -6 -18 -6 q-10 0 -18 6z" fill="${P.a}"/>`;
+    case 'band': return `${face}${eyes}<path d="M81 50 q19 -8 38 0 l0 7 q-19 -7 -38 0z" fill="${P.c}"/>
+      <path d="M119 52 l14 -6 -3 10z" fill="${P.c}"/>`;
+    case 'hood': return `<path d="M100 30 q-26 0 -26 26 q0 22 26 26 q26 -4 26 -26 q0 -26 -26 -26z" fill="${P.c}"/>
+      <ellipse cx="100" cy="64" rx="14" ry="15" fill="#1a1620"/>
+      <circle cx="94" cy="63" r="2.4" fill="${P.g}"/><circle cx="106" cy="63" r="2.4" fill="${P.g}"/>`;
+    case 'cap': return `${face}${eyes}<path d="M78 52 q22 -22 44 0 l0 6 q-22 -10 -44 0z" fill="${P.a}"/>
+      <path d="M76 56 h48 v5 h-48z" fill="${P.m}"/>`;
+    case 'open': return `${dome}<ellipse cx="100" cy="64" rx="13" ry="13" fill="${P.s}"/>${eyes}
+      <path d="M78 52 h44 v6 h-44z" fill="${P.a}"/><path d="M96 58 h8 v20 h-8z" fill="${P.m}"/>`;
+    case 'full': return `${dome}${visor}<path d="M78 50 h44 v5 h-44z" fill="${P.a}"/>
+      <path d="M100 70 q-10 0 -12 -6 h24 q-2 6 -12 6z" fill="${P.a}"/>`;
+    case 'plume': return `<path d="M100 30 q16 -22 32 -12 q-4 16 -22 20z" fill="${P.g}"/>${dome}${visor}
+      <path d="M78 50 h44 v5 h-44z" fill="${P.g}"/>`;
+    case 'horn': return `${dome}${visor}
+      <path d="M80 40 q-18 -12 -24 -30 q22 6 30 22z" fill="${P.g}"/>
+      <path d="M120 40 q18 -12 24 -30 q-22 6 -30 22z" fill="${P.g}"/>
+      <path d="M78 50 h44 v5 h-44z" fill="${P.a}"/>`;
+    case 'wingh': return `${dome}${visor}${wingh}<path d="M78 50 h44 v5 h-44z" fill="${P.g}"/>`;
+    case 'mask': return `<path d="M100 30 q24 0 24 24 v12 q0 16 -24 16 q-24 0 -24 -16 v-12 q0 -24 24 -24z" fill="${P.a}"/>
+      <path d="M100 30 q24 0 24 24 v12 q0 16 -24 16 q-24 0 -24 -16 v-12 q0 -24 24 -24z" fill="none" stroke="${P.m}" stroke-width="2"/>
+      <path d="M88 54 l10 6 -10 5z M112 54 l-10 6 10 5z" fill="${P.g}"/>
+      <path d="M100 30 L100 82" stroke="${P.m}" stroke-width="1.5" opacity=".6"/>`;
+    case 'crown': return `${dome}${visor}${crown}<path d="M78 50 h44 v5 h-44z" fill="${P.g}"/>`;
+    case 'halo': return `${halo}<ellipse cx="100" cy="62" rx="17" ry="19" fill="${P.s}"/>
+      <path d="M83 56 q17 -12 34 0" stroke="${P.g}" stroke-width="3" fill="none"/>
+      <circle cx="93" cy="63" r="2.6" fill="${P.g}"/><circle cx="107" cy="63" r="2.6" fill="${P.g}"/>`;
+    case 'plumehalo': return `${halo}<path d="M100 30 q16 -20 30 -10 q-4 14 -20 18z" fill="${P.g}"/>${dome}${visor}`;
+    case 'maskhalo': return `<ellipse cx="100" cy="26" rx="26" ry="7" fill="none" stroke="${P.m}" stroke-width="4"/>${ART.head('mask',P)}`;
+    case 'crownhalo': return `${halo}${dome}${visor}${crown}<path d="M78 50 h44 v5 h-44z" fill="${P.g}"/>`;
+  } return '';
+},
+weap(v,P){
+  const grip=(y)=>`<rect x="132" y="${y}" width="26" height="6" rx="3" fill="${P.m}"/>
+    <rect x="142" y="${y+6}" width="6" height="18" rx="3" fill="${P.a}"/>
+    <circle cx="145" cy="${y+26}" r="4" fill="${P.m}"/>`;
+  const blade=(top,w,fill)=>`<path d="M145 ${top} L${145+w} ${top+16} L${145+w} 130 L${145-w} 130 L${145-w} ${top+16} Z" fill="${fill}"/>
+    <path d="M145 ${top} L145 130" stroke="#fff" stroke-width="1.2" opacity=".45"/>`;
+  switch(v){
+    case 'stick': return `<path d="M148 74 q-6 24 -3 50 q1 8 -2 14 l-7 -1 q4 -8 3 -16 q-3 -26 3 -48z" fill="#6b5a3f"/>
+      <path d="M150 92 l10 -6 -8 10z M143 112 l-10 -4 9 9z" fill="#5a4a32"/>`;
+    case 'dagger': return `${blade(96,6,P.m)}${grip(130)}`;
+    case 'short': return `${blade(84,7,P.m)}${grip(130)}`;
+    case 'sword': return `${blade(66,8,P.m)}${grip(130)}`;
+    case 'long': return `${blade(46,9,P.m)}${grip(130)}
+      <path d="M132 130 q13 -8 26 0" stroke="${P.g}" stroke-width="2.5" fill="none"/>`;
+    case 'great': return `<path d="M145 30 L158 52 L158 128 L132 128 L132 52 Z" fill="${P.m}"/>
+      <path d="M145 30 L145 128" stroke="#fff" stroke-width="1.6" opacity=".45"/>
+      <path d="M126 128 h38 v8 h-38z" fill="${P.g}"/>
+      <rect x="141" y="136" width="8" height="24" rx="4" fill="${P.a}"/><circle cx="145" cy="163" r="5" fill="${P.g}"/>`;
+    case 'flam': return `<path d="M145 32 q10 14 4 24 q-6 10 4 20 q10 10 2 22 q-8 12 2 26 l-24 0 q10 -14 2 -26 q-8 -12 2 -22 q10 -10 4 -20 q-6 -10 4 -24z" fill="${P.m}"/>
+      <path d="M126 126 h38 v8 h-38z" fill="${P.g}"/><rect x="141" y="134" width="8" height="22" rx="4" fill="${P.a}"/>`;
+    case 'spear': return `<rect x="142" y="46" width="7" height="120" rx="3" fill="${P.a}"/>
+      <path d="M145.5 8 L156 40 L145.5 50 L135 40 Z" fill="${P.m}"/>
+      <path d="M145.5 12 L145.5 48" stroke="${P.g}" stroke-width="2"/><path d="M135 52 h21 v6 h-21z" fill="${P.g}"/>`;
+    case 'axe': return `<rect x="142" y="40" width="8" height="126" rx="4" fill="${P.a}"/>
+      <path d="M142 52 q-30 4 -34 30 q22 -8 34 -6z" fill="${P.m}"/>
+      <path d="M150 52 q30 4 34 30 q-22 -8 -34 -6z" fill="${P.m}"/>
+      <path d="M138 48 h16 v34 h-16z" fill="${P.g}" opacity=".7"/>`;
+    case 'void': return `<path d="M145 34 L156 56 L156 128 L134 128 L134 56 Z" fill="${P.a}"/>
+      <path d="M145 34 L156 56 L156 128 L134 128 L134 56 Z" fill="none" stroke="${P.g}" stroke-width="2"/>
+      <path d="M145 40 L145 126" stroke="${P.g}" stroke-width="2.5"/>
+      <path d="M128 128 h34 v7 h-34z" fill="${P.m}"/><rect x="141" y="135" width="8" height="22" rx="4" fill="${P.a}"/>`;
+    case 'holy': return `<path d="M145 26 L157 50 L157 126 L133 126 L133 50 Z" fill="${P.m}"/>
+      <path d="M145 26 L145 126" stroke="${P.g}" stroke-width="3"/>
+      <path d="M120 126 h50 v9 h-50z" fill="${P.g}"/>
+      <rect x="141" y="135" width="8" height="24" rx="4" fill="${P.c}"/><circle cx="145" cy="162" r="6" fill="${P.g}"/>
+      <circle cx="145" cy="70" r="20" fill="${P.g}" opacity=".18"/>`;
+    case 'twin': return `<path d="M150 40 L160 60 L160 128 L140 128 L140 60 Z" fill="${P.m}" opacity=".95"/>
+      <path d="M134 128 h32 v7 h-32z" fill="${P.g}"/>
+      <path d="M50 46 L60 66 L60 128 L40 128 L40 66 Z" fill="${P.m}" opacity=".8"/>
+      <path d="M34 128 h32 v7 h-32z" fill="${P.g}"/>`;
+    case 'twinvoid': return `
+      <path d="M152 34 L163 58 L163 130 L141 130 L141 58 Z" fill="${P.a}" stroke="${P.m}" stroke-width="2"/>
+      <path d="M152 40 L152 128" stroke="${P.g}" stroke-width="2.5"/>
+      <path d="M48 34 L59 58 L59 130 L37 130 L37 58 Z" fill="${P.a}" stroke="${P.m}" stroke-width="2"/>
+      <path d="M48 40 L48 128" stroke="${P.g}" stroke-width="2.5"/>
+      <path d="M135 130 h34 v7 h-34z M31 130 h34 v7 h-34z" fill="${P.m}"/>`;
+    case 'lance': return `<rect x="142" y="30" width="8" height="150" rx="4" fill="${P.m}"/>
+      <path d="M146 -2 L160 34 L146 46 L132 34 Z" fill="${P.g}"/>
+      <path d="M146 4 L146 44" stroke="#fff" stroke-width="2" opacity=".8"/>
+      <path d="M130 52 q16 10 32 0 l0 8 q-16 10 -32 0z" fill="${P.g}" opacity=".6"/>`;
+    case 'star': return `<path d="M150 24 L162 50 L162 132 L138 132 L138 50 Z" fill="${P.m}"/>
+      <path d="M150 24 L150 132" stroke="${P.g}" stroke-width="3"/>
+      <path d="M126 132 h48 v8 h-48z" fill="${P.g}"/>
+      <circle cx="150" cy="18" r="5" fill="${P.g}"/><circle cx="168" cy="96" r="3.5" fill="${P.g}" opacity=".85"/>
+      <circle cx="132" cy="70" r="2.5" fill="${P.g}" opacity=".7"/>`;
+    case 'legend': return `<path d="M150 6 L166 40 L166 134 L134 134 L134 40 Z" fill="${P.m}"/>
+      <path d="M150 6 L150 134" stroke="#fff" stroke-width="3"/>
+      <path d="M150 6 L166 40 L166 134 L134 134 L134 40 Z" fill="none" stroke="${P.g}" stroke-width="2"/>
+      <path d="M116 134 h68 v10 h-68z" fill="${P.g}"/>
+      <rect x="145" y="144" width="10" height="26" rx="5" fill="${P.c}"/><circle cx="150" cy="174" r="7" fill="${P.g}"/>
+      <circle cx="150" cy="66" r="30" fill="${P.g}" opacity=".16"/>
+      <path d="M150 30 l4 12 12 4 -12 4 -4 12 -4 -12 -12 -4 12 -4z" fill="#fff" opacity=".9"/>`;
+  } return '';
+},
+shield(v,P){
+  switch(v){
+    case 'buckler': return `<circle cx="60" cy="132" r="18" fill="${P.a}"/>
+      <circle cx="60" cy="132" r="18" fill="none" stroke="${P.m}" stroke-width="3"/><circle cx="60" cy="132" r="5" fill="${P.m}"/>`;
+    case 'kite': return `<path d="M58 100 q22 6 22 24 q0 26 -22 40 q-22 -14 -22 -40 q0 -18 22 -24z" fill="${P.c}"/>
+      <path d="M58 100 q22 6 22 24 q0 26 -22 40 q-22 -14 -22 -40 q0 -18 22 -24z" fill="none" stroke="${P.m}" stroke-width="3"/>
+      <path d="M58 108 L58 154 M40 126 L76 126" stroke="${P.m}" stroke-width="3"/>`;
+    case 'tower': return `<path d="M36 92 h44 v56 q0 20 -22 26 q-22 -6 -22 -26z" fill="${P.c}"/>
+      <path d="M36 92 h44 v56 q0 20 -22 26 q-22 -6 -22 -26z" fill="none" stroke="${P.m}" stroke-width="3"/>
+      <path d="M58 100 L58 164 M40 118 h36" stroke="${P.m}" stroke-width="3"/><circle cx="58" cy="118" r="7" fill="${P.m}"/>`;
+    case 'holy': return `<path d="M34 88 h48 v58 q0 22 -24 30 q-24 -8 -24 -30z" fill="${P.m}"/>
+      <path d="M34 88 h48 v58 q0 22 -24 30 q-24 -8 -24 -30z" fill="none" stroke="${P.g}" stroke-width="3"/>
+      <path d="M58 98 L58 166 M38 122 h40" stroke="${P.g}" stroke-width="5"/>
+      <circle cx="58" cy="122" r="9" fill="${P.g}"/><circle cx="58" cy="122" r="4" fill="${P.c}"/>`;
+  } return '';
+},
+back(v,P){
+  const wing=(dir,sc,op)=>`<path transform="translate(100 96) scale(${dir*sc} ${sc}) translate(-100 -96)"
+    d="M100 96 q-30 -30 -62 -22 q10 16 26 22 q-18 2 -28 12 q16 10 34 6 q-14 10 -18 24 q22 -4 34 -18 q-4 16 2 28 q14 -14 18 -34z"
+    fill="${P.g}" opacity="${op}"/>`;
+  switch(v){
+    case 'tatter': return `<path d="M100 88 L132 104 L128 160 L118 148 L110 168 L100 152 L90 168 L82 148 L72 160 L68 104 Z" fill="${P.a}" opacity=".9"/>`;
+    case 'cloak': return `<path d="M100 86 L134 104 L128 176 L100 166 L72 176 L66 104 Z" fill="${P.c}"/>
+      <path d="M100 86 L134 104 L128 176 L100 166 L72 176 L66 104 Z" fill="none" stroke="${P.a}" stroke-width="2"/>`;
+    case 'cape': return `<path d="M100 84 L138 102 L132 186 L100 172 L68 186 L62 102 Z" fill="${P.c}"/>
+      <path d="M100 84 L100 172" stroke="${P.a}" stroke-width="2" opacity=".5"/>
+      <path d="M66 92 q34 -14 68 0 l-4 12 q-30 -12 -60 0z" fill="${P.m}"/>`;
+    case 'long': return `<path d="M100 82 L142 102 L136 210 L100 190 L64 210 L58 102 Z" fill="${P.c}"/>
+      <path d="M100 82 L100 190" stroke="${P.a}" stroke-width="2" opacity=".5"/>
+      <path d="M62 92 q38 -16 76 0 l-5 13 q-33 -13 -66 0z" fill="${P.m}"/>`;
+    case 'banner': return `${ART.back('long',P)}
+      <path d="M100 118 L114 140 L100 162 L86 140 Z" fill="${P.g}" opacity=".85"/>
+      <path d="M78 176 l10 14 10 -14 M122 176 l-10 14 -10 -14" fill="${P.g}" opacity=".6"/>`;
+    case 'ring': return `<circle cx="100" cy="96" r="62" fill="none" stroke="${P.g}" stroke-width="3" opacity=".55"/>
+      <circle cx="100" cy="96" r="52" fill="none" stroke="${P.g}" stroke-width="1.5" stroke-dasharray="5 7" opacity=".8"/>
+      <circle cx="100" cy="96" r="44" fill="${P.g}" opacity=".08"/>`;
+    case 'capering': return `${ART.back('long',P)}
+      <circle cx="100" cy="90" r="58" fill="none" stroke="${P.g}" stroke-width="2.5" opacity=".5"/>`;
+    case 'wing2': return wing(-1,1,.9)+wing(1,1,.9);
+    case 'wing4': return wing(-1,1,.9)+wing(1,1,.9)+`<g opacity=".55">${wing(-1,.7,.7)}${wing(1,.7,.7)}</g>`;
+    case 'wing4dark': return `<g opacity=".9">${wing(-1,1,.75)}${wing(1,1,.75)}</g><g opacity=".45">${wing(-1,.7,.6)}${wing(1,.7,.6)}</g>`;
+    case 'wing6': return wing(-1,1.05,.92)+wing(1,1.05,.92)+
+      `<g opacity=".6">${wing(-1,.78,.75)}${wing(1,.78,.75)}</g>`+
+      `<g opacity=".38" transform="translate(0 40)">${wing(-1,.58,.7)}${wing(1,.58,.7)}</g>`;
+    case 'wing6ring': return ART.back('wing6',P)+
+      `<circle cx="100" cy="94" r="70" fill="none" stroke="${P.g}" stroke-width="3" opacity=".5"/>
+       <circle cx="100" cy="94" r="58" fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray="4 8" opacity=".7"/>`;
+  } return '';
+},
+fx(v,P){
+  const rnd=(n,f)=>{let s='';for(let i=0;i<n;i++)s+=f(i);return s;};
+  switch(v){
+    case 'dust': return rnd(6,i=>`<circle cx="${52+i*20}" cy="${222-((i*37)%10)}" r="${1.5+(i%3)*.6}" fill="${P.g}" opacity=".35"/>`);
+    case 'pack': return `<path d="M64 108 q-14 4 -14 20 q0 14 14 16 q10 -2 10 -18 q0 -14 -10 -18z" fill="${P.a}"/>
+      <path d="M52 122 h22 v5 h-22z" fill="${P.c}"/>`;
+    case 'spark': return rnd(7,i=>`<circle cx="${150+((i*29)%26)-13}" cy="${52+i*13}" r="${1.4+(i%2)}" fill="${P.g}" opacity=".8"/>`);
+    case 'shine': return `<path d="M150 40 l3 10 10 3 -10 3 -3 10 -3 -10 -10 -3 10 -3z" fill="#fff" opacity=".9"/>
+      <path d="M56 88 l2 7 7 2 -7 2 -2 7 -2 -7 -7 -2 7 -2z" fill="#fff" opacity=".7"/>`;
+    case 'flame': return `<path d="M145 128 q-14 -22 -4 -40 q2 12 8 16 q4 -14 -2 -28 q22 16 16 40 q-2 8 -8 12z" fill="${P.g}" opacity=".55"/>
+      ${rnd(6,i=>`<path d="M${40+i*24} 216 q-4 -12 2 -18 q0 8 4 10 q2 -8 -1 -14 q10 8 6 22z" fill="${P.m}" opacity="0.${3+i%4}"/>`)}`;
+    case 'frost': return rnd(8,i=>{const x=30+((i*47)%146),y=40+((i*61)%150);
+      return `<path d="M${x} ${y-6} L${x} ${y+6} M${x-5} ${y-3} L${x+5} ${y+3} M${x-5} ${y+3} L${x+5} ${y-3}" stroke="${P.g}" stroke-width="1.6" opacity=".7"/>`;});
+    case 'bolt': return `<path d="M40 20 L58 66 L44 66 L60 110 L34 62 L48 62 Z" fill="${P.g}" opacity=".85"/>
+      <path d="M170 34 L182 62 L172 62 L184 92 L162 58 L172 58 Z" fill="${P.g}" opacity=".6"/>`;
+    case 'stone': return `<path d="M22 214 l14 -12 12 14 -12 8z" fill="${P.m}" opacity=".8"/>
+      <path d="M162 218 l16 -14 14 16 -14 8z" fill="${P.m}" opacity=".7"/><path d="M46 224 l10 -8 9 10 -9 6z" fill="${P.a}"/>`;
+    case 'void': return `<circle cx="100" cy="120" r="76" fill="none" stroke="${P.g}" stroke-width="1.4" stroke-dasharray="3 9" opacity=".55"/>
+      ${rnd(8,i=>`<circle cx="${100+Math.round(70*Math.cos(i*.785))}" cy="${120+Math.round(70*Math.sin(i*.785))}" r="3" fill="${P.g}" opacity=".7"/>`)}`;
+    case 'void2': return ART.fx('void',P)+`<ellipse cx="100" cy="226" rx="60" ry="10" fill="${P.m}" opacity=".25"/>`;
+    case 'rays': return rnd(10,i=>`<path d="M100 100 L${100+Math.round(120*Math.cos(i*.628))} ${100+Math.round(120*Math.sin(i*.628))}" stroke="${P.g}" stroke-width="2" opacity=".18"/>`);
+    case 'dragon': return `<path d="M28 70 q18 -14 34 -4 q-6 4 -8 12 q-14 -10 -26 -8z" fill="${P.m}" opacity=".8"/>
+      <path d="M30 76 l8 8 -10 4z M46 70 l8 8 -10 4z" fill="${P.a}"/><circle cx="42" cy="76" r="2.6" fill="${P.g}"/>`;
+    case 'rune': return rnd(6,i=>{const a=i*1.047,x=100+Math.round(78*Math.cos(a)),y=118+Math.round(78*Math.sin(a));
+      return `<g opacity=".8"><rect x="${x-7}" y="${y-7}" width="14" height="14" rx="3" fill="none" stroke="${P.g}" stroke-width="1.6"/>
+      <path d="M${x-3} ${y-3} L${x+3} ${y+3} M${x+3} ${y-3} L${x-3} ${y+3}" stroke="${P.g}" stroke-width="1.4"/></g>`;});
+    case 'orb': return rnd(5,i=>`<circle cx="${100+Math.round(72*Math.cos(i*1.256))}" cy="${110+Math.round(60*Math.sin(i*1.256))}" r="${4-i%2}" fill="${P.g}" opacity=".85"/>`);
+    case 'star': return rnd(12,i=>{const x=16+((i*53)%172),y=14+((i*79)%200);
+      return `<path d="M${x} ${y-4} l1.2 3 3 1.2 -3 1.2 -1.2 3 -1.2 -3 -3 -1.2 3 -1.2z" fill="#fff" opacity="0.${5+i%5}"/>`;});
+    case 'cloud': return `<ellipse cx="42" cy="196" rx="34" ry="10" fill="${P.g}" opacity=".28"/>
+      <ellipse cx="158" cy="176" rx="28" ry="9" fill="${P.g}" opacity=".22"/>
+      <ellipse cx="100" cy="222" rx="56" ry="12" fill="${P.g}" opacity=".28"/>`;
+    case 'aurora': return `<path d="M8 60 q40 -34 90 -12 q52 22 94 -8" stroke="${P.g}" stroke-width="7" fill="none" opacity=".22"/>
+      <path d="M8 84 q44 -30 92 -8 q50 22 92 -12" stroke="#fff" stroke-width="3" fill="none" opacity=".2"/>${ART.fx('star',P)}`;
+    case 'legend': return `${ART.fx('rays',P)}${ART.fx('star',P)}
+      <circle cx="100" cy="110" r="88" fill="none" stroke="${P.g}" stroke-width="2" opacity=".35"/>
+      <ellipse cx="100" cy="228" rx="70" ry="12" fill="${P.g}" opacity=".35"/>`;
+  } return '';
+}
+};
+
+function heroSVG(lv, tag){
+  const D=DEX[lv-1], P=D.P, A=D.A, sc=A.scale||1, hunch=A.hunch||0;
+  const uid = lv+(tag||'');
+  return `<svg viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${lv}강 ${D.n}">
+    <defs><radialGradient id="gd${uid}" cx="50%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="${P.g}" stop-opacity=".26"/><stop offset="100%" stop-color="${P.g}" stop-opacity="0"/>
+    </radialGradient></defs>
+    <rect x="0" y="0" width="200" height="250" fill="url(#gd${uid})"/>
+    <ellipse cx="100" cy="232" rx="${44*sc}" ry="8" fill="#000" opacity=".45"/>
+    ${A.fx?ART.fx(A.fx,P):''}
+    <g transform="translate(100 ${232-(A.float||0)}) scale(${sc}) translate(-100 -232) rotate(${hunch} 100 170)">
+      ${ART.back(A.back||'none',P)}${ART.legs(A.legs,P)}${ART.torso(A.torso,P)}
+      ${ART.head(A.head,P)}${ART.weap(A.weap,P)}${ART.shield(A.shield||'none',P)}
+    </g></svg>`;
+}
+
+/* 용사 일러스트 렌더러.
+   커스텀 이미지(images/hero-N.png)가 있으면 그것을, 없으면 내장 SVG를 사용한다.
+   단계별로 따로 판정하므로 일부만 교체해도 정상 동작한다. */
+function heroVisual(lv, tag){
+  const file = ASSETS.heroFile(lv);
+  if(assetReady(file)){
+    return `<img class="heroImg" src="${assetUrl(file)}" alt="${lv}강 ${DEX[lv-1].n}">`;
+  }
+  probeAsset(file, ()=>{ lastLv = 0; render(); });
+  return heroSVG(lv, tag);
+}
+
+/* =====================================================================
+   6. 상태
+   ===================================================================== */
+const S = {
+  lv:1, gold:CONFIG.startGold, record:1,
+  gate:null,             // 관문 대결 진행 중인 단계 (null이면 없음)
+  gatesCleared:new Set(),// 한 번이라도 이긴 관문 — 이후로는 몬스터 없이 통과
+  inv:{revive:0, dagger:0, shield:0},
+  weapons:[],            // 보유 무기 (WEAPONS 인덱스 배열, 15=일반 단검, 16=전설의 검)
+  weaponSeen:new Set(),  // 검 도감 — 한 번이라도 손에 넣어본 무기 등급
+  duelPick:null,         // 대결에 들고 갈 무기 슬롯 번호 (단 1자루, null=맨손)
+  stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0},
+  sound:false, busy:false, debugEasyMode:false
+};
+
+const $ = id => document.getElementById(id);
+const idx = () => S.lv-1;
+const isMax = () => S.lv>=30;
+const costNow = () => isMax()?0:CONFIG.cost[idx()];
+const sellNow = () => CONFIG.sell[idx()];        // null이면 판매 불가
+const powerNow = () => Math.round(10*Math.pow(1.42,S.lv-1));
+
+function fmt(n){
+  n=Math.floor(n);
+  if(n>=1e12) return (n/1e12).toFixed(2).replace(/\.?0+$/,'')+'조';
+  if(n>=1e8)  return (n/1e8).toFixed(2).replace(/\.?0+$/,'')+'억';
+  if(n>=1e4)  return (n/1e4).toFixed(1).replace(/\.0$/,'')+'만';
+  return n.toLocaleString('ko-KR');
+}
+function tierName(lv){let t=CONFIG.tiers[0];for(const x of CONFIG.tiers) if(lv>=x[0]) t=x;return t[1];}
+
+function outcome(lv){
+  const i=lv-1;
+  if(lv>=30) return {succ:0,brk:0};
+  if(S.debugEasyMode && lv>=25) return {succ:1,brk:0};   // 테스트 모드: 25강부터 강화 100%
+  return {succ:CONFIG.succ[i], brk:1-CONFIG.succ[i]};
+}
+function reviveCostFor(lv){ return CONFIG.reviveCost[lv-1]; }   // null = 사용 불가
+function shieldPrice(){ return CONFIG.shieldPrice; }            // 전설의 방패 고정가
+
+/* 소리 */
+let actx=null;
+function beep(f,d,t='triangle',v=.14){
+  if(!S.sound) return;
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+d);
+    o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d);
+  }catch(e){}
+}
+const sfx={
+  win(){beep(660,.1);setTimeout(()=>beep(880,.18),90);},
+  keep(){beep(300,.12,'sine');},
+  down(){beep(240,.2,'sawtooth',.1);},
+  brk(){beep(150,.5,'sawtooth',.18);setTimeout(()=>beep(80,.6,'square',.14),80);},
+  coin(){beep(1046,.08);setTimeout(()=>beep(1318,.12),70);},
+  drop(){beep(880,.07);setTimeout(()=>beep(1174,.07),70);setTimeout(()=>beep(1568,.14),140);},
+  duelWin(){beep(523,.12);setTimeout(()=>beep(659,.12),110);setTimeout(()=>beep(784,.12),220);setTimeout(()=>beep(1046,.3),330);},
+  duelLose(){beep(220,.3,'sawtooth',.16);setTimeout(()=>beep(160,.4,'sawtooth',.16),200);setTimeout(()=>beep(100,.7,'square',.14),420);},
+  /* 첫 공격이 빗나간 순간 — 짧고 둔탁한 타격음 */
+  duelMiss(){beep(180,.16,'sawtooth',.16);setTimeout(()=>beep(120,.24,'square',.13),110);},
+  /* 대장간 조합 */
+  forgeWin(){beep(392,.09);setTimeout(()=>beep(587,.09),85);setTimeout(()=>beep(784,.1),170);setTimeout(()=>beep(1046,.26),255);},
+  forgeFail(){beep(300,.09,'square',.14);setTimeout(()=>beep(200,.14,'sawtooth',.15),90);setTimeout(()=>beep(110,.4,'sawtooth',.13),200);}
+};
+
+function log(msg,cls){
+  const p=document.createElement('p');p.className='l-'+cls;p.innerHTML=msg;
+  const box=$('log');box.prepend(p);
+  while(box.children.length>70) box.lastChild.remove();
+}
+function flash(t,c){
+  const f=$('flash');f.textContent=t;f.style.color=c;
+  f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+}
+function toast(msg){
+  const box=$('toastBox');
+  const el=document.createElement('div');
+  el.className='toast';el.innerHTML=msg;
+  box.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),350); },2600);
+}
+
+/* =====================================================================
+   7. 렌더
+   ===================================================================== */
+function buildLadder(){
+  const L=$('ladder');L.innerHTML='';
+  for(let i=1;i<=30;i++){
+    const d=document.createElement('div');
+    d.className='rung'+(isGate(i)?' gate':'');
+    d.textContent=i;d.dataset.lv=i;
+    d.title=i<=S.record?`${i}강 ${DEX[i-1].n}`:`${i}강 ???`;
+    L.appendChild(d);
+  }
+}
+
+let lastLv=0;
+/* 아이템 탭 잠금 — 아이템 구매는 오직 1강일 때만 가능.
+   강화를 한 번이라도 성공해 2강 이상으로 올라가면, 실패해서 1강으로
+   돌아오거나 판매로 1강이 될 때까지 아이템 탭이 잠긴다.
+   (부활권 등은 1강일 때 미리 사두고 전략을 짜는 것이 의도된 설계)
+   판매는 이 잠금과 무관하게 언제든 가능하다. */
+function syncItemLock(){
+  const locked = S.lv !== 1 || S.gate !== null;
+  const itemTabBtn = document.querySelector('.tabs button[data-tab="item"]');
+  if(!itemTabBtn) return;
+  itemTabBtn.disabled = locked;
+  itemTabBtn.title = locked ? '아이템 구매는 1강일 때만 가능합니다' : '';
+  const itemPane = document.getElementById('pane-item');
+  if(locked && itemPane && itemPane.classList.contains('on')) showTab('rec');
+}
+
+function render(){
+  syncItemLock();
+  const D=DEX[idx()],P=D.P,o=outcome(S.lv),rs=document.documentElement.style;
+  rs.setProperty('--tier',P.hi);rs.setProperty('--tier-dark',P.a);rs.setProperty('--glow',P.g);
+
+  if(lastLv!==S.lv){
+    $('heroBox').innerHTML=heroVisual(S.lv);
+    $('heroBox').classList.remove('pulse');void $('heroBox').offsetWidth;$('heroBox').classList.add('pulse');
+    lastLv=S.lv;
+  }
+
+  $('uiTier').textContent=tierName(S.lv);
+  $('uiLv').innerHTML=S.lv+'<small>강</small>';
+  $('uiName').textContent=D.n;
+  $('uiDesc').textContent=D.d;
+  $('uiPower').textContent=fmt(powerNow());
+  $('uiSell').textContent=sellNow()==null?'판매 불가':fmt(sellNow());
+  $('uiGold').textContent=fmt(S.gold);
+  $('uiRecord').textContent=S.record+'강';
+
+  const upBtn=$('btnUp');
+  if(S.gate!==null){
+    /* 관문 대결 진행 중 — 다른 조작 불가 */
+    const G=GATES[S.gate];
+    $('gateWarn').style.display='block';
+    $('gateWarn').innerHTML=`<b>${G.n}</b>과(와) 대결 중입니다. 물러설 수 없습니다. 이기면 ${S.gate+1}강, 지면 <b>1강으로 돌아갑니다.</b>`;
+    $('oddsBox').style.display='none';
+    upBtn.classList.add('duel');
+    upBtn.innerHTML=`대결 창 열기<small class="costNote">${G.n}</small>`;
+    upBtn.disabled=false;
+  }else{
+    $('oddsBox').style.display='block';
+    upBtn.classList.remove('duel');
+    if(isMax()){
+      $('gateWarn').style.display='none';
+      $('uiNext').textContent='최종 단계에 도달했습니다';
+      $('uiSucc').textContent='—';
+      upBtn.innerHTML='강화하기<small class="costNote">더 이상 강화할 수 없음</small>';
+      upBtn.disabled=true;
+    }else{
+      const pendingGate = isGate(S.lv) && !S.gatesCleared.has(S.lv);
+      if(pendingGate){
+        $('gateWarn').style.display='block';
+        $('gateWarn').innerHTML=`강화에 성공해도 <b>${GATES[S.lv].n}</b>이(가) ${S.lv+1}강으로 가는 길을 막습니다. 피할 수 없는 대결이니 <b>무기를 미리 챙겨두세요.</b> (부활권은 대결에 통하지 않습니다 — 전설의 방패만 유효)`;
+      }else if(isGate(S.lv)){
+        $('gateWarn').style.display='block';
+        $('gateWarn').innerHTML=`이미 물리친 <b>${GATES[S.lv].n}</b>은 다시 나타나지 않습니다. 강화만 성공하면 그대로 지나갑니다.`;
+      }else{
+        $('gateWarn').style.display='none';
+      }
+      $('uiNext').textContent=`다음 단계 · ${S.lv+1}강 ${S.lv+1<=S.record?DEX[S.lv].n:'???'}${pendingGate?' (관문)':''}`;
+      $('uiSucc').textContent=(o.succ*100).toFixed(o.succ<.1?1:0)+'%';
+      upBtn.innerHTML=`강화하기<small class="costNote">${fmt(costNow())} G</small>`;
+      upBtn.disabled=S.gold<costNow();
+    }
+  }
+  $('barSucc').style.width=(o.succ*100)+'%';
+  $('barBreak').style.width=(o.brk*100)+'%';
+
+  /* 부활권 부족 경고 — 관문 대결 중/최종 단계에서는 굳이 표시 안 함 */
+  const rv=$('reviveWarn');
+  if(S.gate!==null || isMax()){
+    rv.style.display='none';
+  }else{
+    const req=reviveCostFor(S.lv);
+    if(req!=null && S.inv.revive<req){
+      rv.style.display='block';
+      rv.innerHTML=`실패 시 부활권 <b>${req}개</b> 필요`;
+    }else{
+      rv.style.display='none';
+    }
+  }
+
+  document.querySelectorAll('.rung').forEach(r=>{
+    const lv=+r.dataset.lv;
+    r.classList.toggle('filled',lv<=S.lv);
+    r.classList.toggle('now',lv===S.lv);
+    r.title=lv<=S.record?`${lv}강 ${DEX[lv-1].n}`:`${lv}강 ???`;
+  });
+
+  /* 부활권 보유 현황 (상점 표시용) */
+  $('oRevive').textContent='×'+S.inv.revive;
+
+  /* 상점 가격 — 아이템 구매는 1강일 때만 가능 */
+  document.querySelectorAll('[data-buy]').forEach(b=>{
+    const k=b.dataset.buy;
+    let p;
+    if(k==='revive1') p=CONFIG.revivePriceSingle;
+    else if(k==='revive3') p=CONFIG.revivePriceBundle3;
+    else if(k==='dagger') p=CONFIG.itemPrice.dagger;
+    else if(k==='shield') p=CONFIG.shieldPrice;
+    else p=CONFIG.warp[k].price;
+    b.textContent=fmt(p)+' G';
+    b.disabled = (S.lv!==1 || S.gate!==null) || S.gold<p;
+  });
+  $('oDagger').textContent='×'+S.weapons.filter(g=>g===SHOP_DAGGER_GRADE).length;
+  $('oShield').textContent='×'+S.inv.shield;
+
+  const sellBtn=$('btnSell'),sp=sellNow();
+  if(S.gate!==null){
+    sellBtn.disabled=true;
+    sellBtn.innerHTML='판매<small class="costNote">대결 중</small>';
+  }else if(sp==null){
+    sellBtn.disabled=true;
+    sellBtn.innerHTML='판매<small class="costNote">판매 불가</small>';
+  }else{
+    sellBtn.disabled=false;
+    sellBtn.innerHTML=`판매<small class="costNote">${fmt(sp)} G</small>`;
+  }
+
+  $('sTry').textContent=S.stat.tryN;$('sWin').textContent=S.stat.win;
+  $('sBreak').textContent=S.stat.brk;$('sStreak').textContent=S.stat.bestStreak;
+  $('sDuelW').textContent=S.stat.duelW;$('sDuelL').textContent=S.stat.duelL;
+  $('sEarn').textContent=fmt(S.stat.earn);$('sSpend').textContent=fmt(S.stat.spend);
+  $('uiRate').textContent='성공률 '+(S.stat.tryN?Math.round(S.stat.win/S.stat.tryN*100):0)+'%';
+
+  renderForge();
+}
+
+function combineWeapon(g){
+  const need=combineNeed(g);
+  const idxs=[]; S.weapons.forEach((wg,i)=>{ if(wg===g) idxs.push(i); });
+  if(idxs.length<need) return;
+  idxs.slice(0,need).sort((a,b)=>b-a).forEach(i=>S.weapons.splice(i,1));
+  const chance=COMBINE_SUCCESS[g]/100;
+  const matName=WEAPONS[g].n;
+  if(Math.random()<chance){
+    const W=stashWeapon(g+1);
+    log(`🔨 조합 성공! ${g+1}급 재료 ${need}개가 <b style="color:${W.g}">${W.n}</b>(으)로 다시 태어났습니다.`,'gold');
+    sfx.forgeWin();
+    render();
+    showForgeResult(true, { name:W.n, color:W.g, icon:weaponIcon(g+1),
+      sub:`${g+2}급 · 위력 ${fmt(W.p)}` }, matName, need);
+  }else{
+    log(`🔨 조합 실패. ${g+1}급 재료 ${need}개가 모두 부서져 사라졌습니다.`,'break');
+    sfx.forgeFail();
+    render();
+    showForgeResult(false, null, matName, need);
+  }
+}
+
+/* 대장간 조합 결과 팝업 (작은 크기) */
+function showForgeResult(success, item, matName, need){
+  $('modal').dataset.mode='forge';
+  $('btnClose').style.display='none';
+  $('sheetTitle').textContent='';
+  $('sheetSub').textContent='';
+  $('sheetBody').innerHTML = `
+    <div class="forgeResult ${success?'ok':'ng'}">
+      <div class="fIcon">${success?'🔨':'💥'}</div>
+      <div class="fTitle">${success?'조합 성공':'조합 실패...'}</div>
+      ${success ? `
+        <div class="fRewardBox" style="border-color:${item.color}44">
+          <div class="fRewardIcon">${item.icon}</div>
+          <div class="fRewardName" style="color:${item.color}">${item.name}</div>
+          <div class="fRewardSub">${item.sub}</div>
+        </div>`
+      : `<div class="fFailMsg"><b>${matName}</b> ${need}개가<br>모두 부서져 사라졌습니다.</div>`}
+      <button class="btn ${success?'btn-main':'btn-sub'} fOkBtn" id="btnForgeOk">확인</button>
+    </div>`;
+  $('modal').classList.add('open');
+  $('btnForgeOk').addEventListener('click', ()=>{
+    $('modal').classList.remove('open');
+    $('btnClose').style.display='';
+  });
+}
+
+function renderForge(){
+  $('forgeCount').textContent=S.weapons.length+'자루 보관';
+  $('forgeDot').classList.toggle('show',S.weapons.length>0);
+
+  const L=$('wlist');
+  if(S.weapons.length===0){
+    L.innerHTML='<div class="empty">보관 중인 무기가 없습니다.<br>강화에 실패하거나 관문에서 패배하면<br>잔해에서 1회용 무기를 얻을 때가 있습니다.<br>상점에서 단검·방패도 구입할 수 있습니다.</div>';
+  }else{
+    const counts={};
+    S.weapons.forEach(g=>{ counts[g]=(counts[g]||0)+1; });
+    const grades=Object.keys(counts).map(Number).sort((a,b)=>b-a);
+    L.innerHTML=grades.map(g=>{
+      const W=WEAPONS[g],n=counts[g];
+      const tag=g===SHOP_DAGGER_GRADE?'단검':g===LEGENDARY_GRADE?'전설':(g+1)+'급';
+      let combineHtml='';
+      if(combinable(g)){
+        const need=combineNeed(g), pct=COMBINE_SUCCESS[g], ready=n>=need;
+        combineHtml=`<button class="buy combineBtn" data-grade="${g}" ${ready?'':'disabled'}
+          style="width:100%;margin-top:8px;white-space:normal;line-height:1.4">
+          🔨 ${need}개 조합 → ${g+2}급 (성공 ${pct}%)${ready?'':` · ${n}/${need}개 보유`}</button>`;
+      }
+      return `<div class="wcard" style="cursor:default;flex-wrap:wrap;align-items:flex-start">
+        <div style="display:flex;align-items:center;gap:9px;width:100%">
+          ${weaponIcon(g)}
+          <div style="flex:1;min-width:0"><div class="wn" style="color:${W.g}">${W.n} <span style="color:var(--ash);font-weight:500">×${n}</span></div>
+          <div class="wp">위력 ${fmt(W.p)}</div></div>
+          <div class="wq">${tag}</div>
+        </div>
+        ${combineHtml}
+      </div>`;
+    }).join('');
+    L.querySelectorAll('.combineBtn').forEach(b=>b.addEventListener('click',()=>combineWeapon(+b.dataset.grade)));
+  }
+
+  $('gateList').innerHTML=GATE_LVS.map(lv=>{
+    const G=GATES[lv],cleared=S.gatesCleared.has(lv),known=S.record>=lv;
+    return `<div>${cleared?'✔ 영구 격파':'✖'} <b style="color:${cleared?'var(--jade)':'var(--ash)'}">${lv}→${lv+1}강</b> — ${known?G.n:'???'}</div>`;
+  }).join('');
+}
+
+/* =====================================================================
+   8. 강화
+   ===================================================================== */
+function stashWeapon(g){
+  if(S.weapons.length>=CONFIG.maxWeapons){
+    S.weapons.sort((a,b)=>a-b); S.weapons.shift();
+  }
+  S.weapons.push(g);
+  S.weaponSeen.add(g);
+  const W=WEAPONS[g];
+  sfx.drop();
+  toast(`⚔️ <b>${W.n}</b>을(를) 습득했다!`);
+  return W;
+}
+function maybeDropWeapon(lv, success){
+  const src = success ? '이전 장비의 잔해 사이' : '부서진 잔해 속';
+  const mult = success ? 0.25 : 1;   // 강화 성공 시 드랍률은 실패의 1/4
+  if(lv>=CONFIG.legendaryMinLv && Math.random()<CONFIG.legendaryChance*mult){
+    const W=stashWeapon(LEGENDARY_GRADE);
+    log(`${src}에서 눈부신 빛이 뿜어져 나왔습니다 — <b style="color:#ffd94a">${W.n}</b>을(를) 손에 넣었습니다!`,'gold');
+    return;
+  }
+  const g=weaponGradeFor(lv);
+  const chance = (g<=5 ? CONFIG.dropChanceLow : CONFIG.dropChance) * mult;
+  if(Math.random()>=chance) return;
+  const W=stashWeapon(g);
+  log(`${src}에서 <b>${W.n}</b>(위력 ${fmt(W.p)})을(를) 주웠습니다. 대장간에 보관됩니다.`,'drop');
+}
+
+/* 최고기록 경신 보너스 — 15강 이상을 '처음' 밟을 때마다
+   그 단계의 판매가만큼 보너스 골드를 지급한다. (한 단계당 딱 한 번) */
+function grantRecordBonus(newLv){
+  if(newLv < CONFIG.recordBonusMinLv) return 0;
+  if(newLv <= S.record) return 0;            // 이미 밟아본 단계면 지급 안 함
+  const bonus = CONFIG.sell[newLv-1];
+  if(bonus == null) return 0;                // 판매 불가 단계(29·30강)는 보너스 없음
+  S.gold += bonus; S.stat.earn += bonus;
+  log(`🏅 <b>최고기록 경신!</b> ${newLv}강 첫 도달 보너스 <b>${fmt(bonus)} G</b>를 받았습니다.`,'gold');
+  toast(`🏅 기록 경신! +${fmt(bonus)} G`);
+  return bonus;
+}
+
+/* 관문 격파 보상 — 100% 확률로 아이템 1개 지급 */
+function grantGateReward(glv){
+  /* 29강 전설의 용 격파 — 상징적으로 전설의 검을 100% 확정 지급 */
+  if(glv === 29){
+    const W = stashWeapon(LEGENDARY_GRADE);
+    log(`🐉 전설의 용이 남긴 자리에서 <b style="color:#ffd94a">${W.n}</b>을(를) 손에 넣었습니다!`,'gold');
+    return { kind:'legendary', name:W.n, sub:`위력 ${fmt(W.p)}`, icon:weaponIcon(LEGENDARY_GRADE), color:'#ffd94a' };
+  }
+  const table = CONFIG.gateReward[glv];
+  if(!table) return null;
+  const entries = Object.entries(table);
+  const total = entries.reduce((s,[,w])=>s+w, 0);
+  let roll = Math.random()*total, picked = entries[0][0];
+  for(const [key,w] of entries){ roll -= w; if(roll < 0){ picked = key; break; } }
+
+  if(picked === 'weapon'){
+    const g = weaponGradeFor(glv);
+    const W = stashWeapon(g);
+    log(`🎁 관문 보상: <b>${W.n}</b>(위력 ${fmt(W.p)})을(를) 얻었습니다.`,'gold');
+    return { kind:'weapon', name:W.n, sub:`위력 ${fmt(W.p)} · 대장간 보관`, icon:weaponIcon(g), color:WEAPONS[g].g };
+  }
+  if(picked === 'revive'){
+    S.inv.revive += 1;
+    log(`🎁 관문 보상: <b>용사 부활권</b> 1개를 얻었습니다. (보유 ${S.inv.revive}개)`,'gold');
+    return { kind:'revive', name:'용사 부활권 ×1', sub:`보유 ${S.inv.revive}개`, emoji:'🧿', color:'#7cc5ff' };
+  }
+  if(picked === 'dagger'){
+    const W = stashWeapon(SHOP_DAGGER_GRADE);
+    log(`🎁 관문 보상: <b>${W.n}</b>을(를) 얻었습니다.`,'gold');
+    return { kind:'dagger', name:W.n, sub:`위력 ${fmt(W.p)} · 대장간 보관`, icon:weaponIcon(SHOP_DAGGER_GRADE), color:'#c8ccd2' };
+  }
+  if(picked === 'warp'){
+    const k = CONFIG.gateWarpKey[glv] || 'w9';
+    const W = CONFIG.warp[k];
+    S.gold += W.price; S.stat.earn += W.price;   // 워프권은 즉시 사용형이라 가치만큼 골드로 환산
+    log(`🎁 관문 보상: <b>${W.name}</b> 상당의 보상 <b>${fmt(W.price)} G</b>를 받았습니다.`,'gold');
+    return { kind:'warp', name:`${fmt(W.price)} G`, sub:`${W.name} 상당의 보상`, emoji:'🌀', color:'#7cc5ff' };
+  }
+  if(picked === 'shield'){
+    S.inv.shield += 1;
+    log(`🎁 관문 보상: <b>전설의 방패</b> 1개를 얻었습니다! (보유 ${S.inv.shield}개)`,'gold');
+    return { kind:'shield', name:'전설의 방패 ×1', sub:`보유 ${S.inv.shield}개`, emoji:'🛡️', color:'#f5c451' };
+  }
+  return null;
+}
+
+/* 관문 격파 승리 팝업 — 성취감을 주는 연출 */
+function showVictory(glv, G, reward, bonusGold, shieldSaved, isDragon){
+  $('modal').dataset.mode='victory';
+  $('btnClose').style.display='none';
+  $('sheetTitle').textContent='';
+  $('sheetSub').textContent='';
+
+  const rewardArt = reward
+    ? (reward.icon
+        ? `<div class="vRewardIcon">${reward.icon}</div>`
+        : `<div class="vRewardEmoji">${reward.emoji}</div>`)
+    : '';
+
+  $('sheetBody').innerHTML = `
+    <div class="victoryWrap ${isDragon?'dragon':''}">
+      <div class="vRays"></div>
+      <div class="vBanner">${isDragon?'전설 달성':'관문 돌파'}</div>
+      <div class="vTitle">${isDragon?'🐉 전설이 되었다':'VICTORY'}</div>
+      <div class="vMonster">${G.n} 격파</div>
+      <div class="vLevel"><b>${glv}강</b> <span>→</span> <b class="vNew">${glv+1}강</b></div>
+
+      ${shieldSaved?`<div class="vShieldNote">🛡️ 전설의 방패가 한 번 더 기회를 주었습니다</div>`:''}
+
+      <div class="vLoot">
+        <div class="vLootRow">
+          <span class="vLootLabel">전리품</span>
+          <span class="vLootVal gold">${fmt(G.reward)} G</span>
+        </div>
+        ${bonusGold?`<div class="vLootRow">
+          <span class="vLootLabel">🏅 기록 경신 보너스</span>
+          <span class="vLootVal gold">+${fmt(bonusGold)} G</span>
+        </div>`:''}
+      </div>
+
+      ${reward?`
+      <div class="vRewardBox" style="border-color:${reward.color}44">
+        <div class="vRewardTag">획득 아이템</div>
+        ${rewardArt}
+        <div class="vRewardName" style="color:${reward.color}">${reward.name}</div>
+        <div class="vRewardSub">${reward.sub}</div>
+      </div>`:''}
+
+      <button class="btn btn-main" id="btnVictoryOk" style="width:100%;margin-top:16px">계속하기</button>
+    </div>`;
+  $('modal').classList.add('open');
+  $('btnVictoryOk').addEventListener('click', ()=>{
+    $('modal').classList.remove('open');
+    $('btnClose').style.display='';
+  });
+}
+
+function bumpStreak(){
+  S.stat.streak++;
+  S.stat.bestStreak=Math.max(S.stat.bestStreak,S.stat.streak);
+}
+
+function enhance(){
+  if(S.busy||S.gate!==null) return;
+  if(isMax()) return;
+  const cost=costNow();
+  if(S.gold<cost){ log('골드가 부족합니다. <b>용사를 판매</b>하거나 대결 전리품으로 자금을 마련하세요.','info'); return; }
+  S.busy=true;
+  syncItemLock();   // render()와 무관하게 즉시 직접 잠금
+  S.gold-=cost;S.stat.spend+=cost;S.stat.tryN++;
+
+  const o=outcome(S.lv);
+  const before=S.lv,name=DEX[before-1].n;
+
+  function finishEnhance(){
+    if(S.lv===30) log('🏆 <b>전설의 용사</b> — 최종 단계에 도달했습니다!','gold');
+    render();
+    setTimeout(()=>{S.busy=false; syncItemLock(); render();},120);
+  }
+  function destroyHero(){
+    S.stat.brk++;
+    S.lv=1;
+    flash('소멸','var(--blood)');sfx.brk();
+    log(`<b>${before}강 ${name}</b>이(가) 빛으로 흩어졌습니다. <b>1강부터 다시</b> 시작합니다.`,'break');
+    $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),460);
+    maybeDropWeapon(before, false);
+    finishEnhance();
+  }
+
+  if(Math.random()<o.succ){
+    S.stat.win++;bumpStreak();
+    maybeDropWeapon(before, true);   // 성공해도 실패와 동일한 확률로 무기를 주울 수 있음
+    if(isGate(before) && !S.gatesCleared.has(before)){
+      /* 강화는 성공했지만 다음 단계로 가는 길목에 몬스터가 있다. 회피 불가. */
+      S.gate=before;
+      syncItemLock();   // 관문 진입도 즉시 직접 잠금
+      flash('조우','var(--ember)');sfx.win();
+      log(`강화에 성공했지만 <b>${before}강 → ${before+1}강</b> 길목을 <b>${GATES[before].n}</b>이(가) 막아섰습니다. 피할 수 없습니다.`,'duel');
+      render();
+      setTimeout(()=>{S.busy=false; syncItemLock(); render(); openDuel();},400);
+      return;
+    }
+    S.lv++;
+    grantRecordBonus(S.lv);                    // S.record 갱신 전에 판정
+    S.record=Math.max(S.record,S.lv);
+    flash('성공','var(--jade)');sfx.win();
+    if(isGate(before)) log(`<b>${before}강 → ${S.lv}강</b> ${DEX[S.lv-1].n}(으)로 거듭났습니다. 이미 물리친 <b>${GATES[before].n}</b>은 다시 나타나지 않았습니다.`,'succ');
+    else log(`<b>${before}강 → ${S.lv}강</b> ${DEX[S.lv-1].n}(으)로 거듭났습니다.`,'succ');
+    finishEnhance();
+  }else{
+    S.stat.streak=0;
+    const req=reviveCostFor(before);
+    const eligible = req!=null && S.inv.revive>=req;
+
+    flash('실패','var(--blood)'); sfx.brk();
+    log(`<b>${before}강 ${name}</b> 강화에 실패했습니다.`,'break');
+
+    if(eligible){
+      render();   // 실패 직후 골드/시도 횟수 등을 즉시 반영 (busy는 유지되어 중복 클릭 방지)
+      askConfirm('강화 실패...',
+        `${before}강 ${name} 강화에 실패했습니다.\n용사 부활권 ${req}개를 사용해 이 자리에서 바로 다시 도전하시겠습니까?\n(보유 부활권 ${S.inv.revive}개)\n\n사용하지 않으면 1강으로 돌아갑니다.`,
+        ()=>{ // 사용함 — 그 단계에서 그대로 다시 시작
+          S.inv.revive-=req;
+          flash('부활','var(--gold)');sfx.keep();
+          log(`<b>용사 부활권</b> ${req}개를 사용해 <b>${before}강</b> 자리에서 되살아났습니다. (남은 ${S.inv.revive}개)`,'info');
+          finishEnhance();
+        },
+        ()=>{ destroyHero(); }   // 사용 안 함 — 1강으로 소멸
+      );
+      return;
+    }
+    render();
+    const noReviveMsg = req==null
+      ? `${before}강 ${name} 강화에 실패했습니다.\n이 단계에서는 용사 부활권을 사용할 수 없습니다.`
+      : `${before}강 ${name} 강화에 실패했습니다.\n실패 시 부활권 ${req}개 필요 (보유 ${S.inv.revive}개)`;
+    askInfo('강화 실패...', noReviveMsg, ()=>{ destroyHero(); }, '1강으로 돌아가기');
+  }
+}
+
+function sell(){
+  if(S.busy||S.gate!==null) return;
+  const g=sellNow();
+  if(g==null){ log('이 단계의 용사는 판매할 수 없습니다.','info'); return; }
+  const lv=S.lv;
+  S.gold+=g;S.stat.earn+=g;S.lv=1;S.stat.streak=0;
+  sfx.coin();
+  log(`<b>${lv}강 ${DEX[lv-1].n}</b>을(를) ${fmt(g)} G에 판매했습니다. 새 용사를 모집합니다.`,'gold');
+  render();
+}
+
+const ITEM_NAME={revive1:'용사 부활권',revive3:'용사 부활권 3개 묶음',dagger:'일반 단검',shield:'전설의 방패',
+  w9:'9강 워프권',w13:'13강 워프권',w14:'14강 워프권',w15:'15강 워프권'};
+function buy(k){
+  /* 아이템 구매는 오직 1강일 때만 가능 (대결 중에도 불가) */
+  if(S.gate!==null) return;
+  if(S.lv!==1){ log('아이템 구매는 <b>1강</b>일 때만 가능합니다.','info'); return; }
+  if(CONFIG.warp[k]){
+    const W=CONFIG.warp[k];
+    if(S.gold<W.price) return;
+    S.gold-=W.price; S.stat.spend+=W.price;
+    S.lv=W.lv; S.record=Math.max(S.record,S.lv); S.stat.streak=0;
+    flash('워프','#7cc5ff'); sfx.drop();
+    log(`🌀 <b>${W.name}</b>을(를) ${fmt(W.price)} G에 구입해 <b>${W.lv}강 ${DEX[W.lv-1].n}</b>에서 다시 시작합니다.`,'info');
+    render();
+    return;
+  }
+
+  let p;
+  if(k==='revive1') p=CONFIG.revivePriceSingle;
+  else if(k==='revive3') p=CONFIG.revivePriceBundle3;
+  else if(k==='dagger') p=CONFIG.itemPrice.dagger;
+  else if(k==='shield') p=CONFIG.shieldPrice;
+  if(S.gold<p)return;
+  S.gold-=p;S.stat.spend+=p;
+
+  if(k==='revive1') S.inv.revive+=1;
+  else if(k==='revive3') S.inv.revive+=3;
+  else if(k==='dagger'){ S.weapons.push(SHOP_DAGGER_GRADE); S.weaponSeen.add(SHOP_DAGGER_GRADE); }
+  else if(k==='shield'){ S.inv.shield++; }
+
+  log(`${ITEM_NAME[k]}을(를) ${fmt(p)} G에 구입했습니다.`,'info');
+  sfx.coin();render();
+}
+
+/* =====================================================================
+   9. 대결
+   ===================================================================== */
+/* 브라우저 네이티브 confirm()/alert()는 일부 미리보기 환경(iframe 샌드박스)에서
+   차단되어 조용히 무시될 수 있어, 게임 내장 모달로 대체 구현합니다. */
+function askConfirm(title, message, onYes, onNo, yesLabel, noLabel){
+  $('modal').dataset.mode='confirm';
+  $('sheetTitle').textContent=title;
+  $('sheetSub').textContent='';
+  $('sheetBody').innerHTML = `
+    <p style="font-size:13px;line-height:1.75;color:var(--bone);white-space:pre-line">${message}</p>
+    <div class="duelBtns" style="margin-top:18px">
+      <button class="btn btn-main" id="btnConfirmYes" style="flex:1">${yesLabel||'사용'}</button>
+      <button class="btn btn-sub" id="btnConfirmNo" style="flex:1">${noLabel||'1강으로'}</button>
+    </div>`;
+  $('btnClose').style.display='none';
+  $('modal').classList.add('open');
+  $('btnConfirmYes').addEventListener('click', ()=>{ $('modal').classList.remove('open'); onYes(); });
+  $('btnConfirmNo').addEventListener('click', ()=>{ $('modal').classList.remove('open'); if(onNo) onNo(); });
+}
+
+/* 버튼 하나짜리 안내창 (예: 테스트 모드 강화 실패 — 죽지 않고 재도전) */
+function askInfo(title, message, onOk, okLabel){
+  $('modal').dataset.mode='confirm';
+  $('sheetTitle').textContent=title;
+  $('sheetSub').textContent='';
+  $('sheetBody').innerHTML = `
+    <p style="font-size:13px;line-height:1.75;color:var(--bone);white-space:pre-line">${message}</p>
+    <div class="duelBtns" style="margin-top:18px">
+      <button class="btn btn-main" id="btnConfirmYes" style="flex:1">${okLabel||'다시 도전하기'}</button>
+    </div>`;
+  $('btnClose').style.display='none';
+  $('modal').classList.add('open');
+  $('btnConfirmYes').addEventListener('click', ()=>{ $('modal').classList.remove('open'); onOk(); });
+}
+
+function openDuel(){
+  if(S.gate===null) return;
+  S.duelPick=null;
+  $('btnClose').style.display='none';
+  $('modal').dataset.mode='duel';
+  renderDuel();
+  $('modal').classList.add('open');
+}
+function renderDuel(){
+  const glv=S.gate;
+  const G=GATES[glv];
+  if(!G) return;
+  if(S.duelPick!=null && S.weapons[S.duelPick]===undefined) S.duelPick=null;
+  const grade = S.duelPick!=null ? S.weapons[S.duelPick] : null;
+  const pct = winChanceFor(glv, grade);
+  $('sheetTitle').textContent='';
+  $('sheetSub').textContent='';
+
+  const list = S.weapons.length===0
+    ? `<div class="empty" style="padding:18px 8px">보관 중인 무기가 없습니다.<br>맨손(승률 ${WIN_TABLE[glv].bare}%)으로 싸우게 됩니다.</div>`
+    : `<div class="dWeapons">` + S.weapons.map((g,i)=>({g,i})).sort((a,b)=>b.g-a.g).map(({g,i})=>{
+        const W=WEAPONS[g];
+        const tag=g===SHOP_DAGGER_GRADE?'단검':g===LEGENDARY_GRADE?'전설':(g+1)+'급';
+        const wpct=winChanceFor(glv,g);
+        return `<div class="dwCard ${S.duelPick===i?'on':''}" data-slot="${i}" style="--wc:${W.g}">
+          <div class="dwIcon">${weaponIcon(g)}</div>
+          <div class="dwInfo">
+            <div class="dwName">${W.n}</div>
+            <div class="dwTag">${tag} · 위력 ${fmt(W.p)}</div>
+          </div>
+          <div class="dwPct">${wpct}<span>%</span></div>
+        </div>`;
+      }).join('') + `</div>`;
+
+  const shieldReady = S.inv.shield>0;
+  const oddsClass = pct>=70?'hi':(pct>=40?'mid':'lo');
+
+  $('sheetBody').innerHTML = `
+    <div class="duelStage">
+
+      <!-- 왼쪽: 몬스터 일러스트 + 대결 정보 -->
+      <div class="dLeft">
+        <div class="dArt">
+          <div class="dArtGlow"></div>
+          <div class="dGateTag">${glv}강 → ${glv+1}강 관문</div>
+          <div class="dMonWrap">${monsterVisual(glv, G.art)}</div>
+          <div class="dMonName">${G.n}</div>
+          <div class="dMonDesc">${G.d}</div>
+        </div>
+        <div class="dLeftPanel">
+          <div class="dWarn">피할 수 없는 대결 · 승리 시 <b class="win">${glv+1}강</b> / 패배 시 <b class="lose">1강</b>으로</div>
+          <div class="dOdds ${oddsClass}">
+            <div class="dOddsLeft">
+              <div class="dOddsLabel">선택한 무기</div>
+              <div class="dOddsWeapon">${grade==null?'맨손':WEAPONS[grade].n}</div>
+            </div>
+            <div class="dOddsRight">
+              <div class="dOddsLabel">승리 확률</div>
+              <div class="dOddsPct">${pct}<span>%</span></div>
+            </div>
+          </div>
+          <div class="dShieldNote">${shieldReady
+            ? `🛡️ 패배해도 <b>전설의 방패</b>(${S.inv.shield}개)를 쓸지 물어봅니다`
+            : `<span class="warn">🛡️ 전설의 방패가 없어 패배 시 즉시 1강으로 돌아갑니다</span>`}</div>
+          <button class="btn btn-main duel dFightBtn" id="btnFight">싸운다</button>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 무기 선택 (넓은 화면에서는 세로로 길게 스크롤) -->
+      <div class="dRight">
+        <div class="dSectionTitle">가져갈 무기 <span>1자루만 선택</span></div>
+        <div class="dWeaponScroll">${list}</div>
+      </div>
+
+    </div>`;
+
+  $('sheetBody').querySelectorAll('.dwCard').forEach(c=>c.addEventListener('click',()=>{
+    const s=+c.dataset.slot;
+    S.duelPick = (S.duelPick===s) ? null : s;
+    renderDuel();
+  }));
+  $('btnFight').addEventListener('click',fight);
+}
+
+function fight(){
+  const glv=S.gate;
+  const G=GATES[glv];
+  if(!G||S.busy) return;
+  S.busy=true;
+  syncItemLock();   // render()와 무관하게 즉시 직접 잠금
+  const grade = S.duelPick!=null ? S.weapons[S.duelPick] : null;
+  const pct = winChanceFor(glv, grade)/100;
+  let usedName=null;
+  if(S.duelPick!=null){
+    usedName = WEAPONS[S.weapons[S.duelPick]].n;
+    S.weapons.splice(S.duelPick,1);   // 1회용: 사용한 무기 소멸
+  }
+  S.duelPick=null;
+
+  $('modal').classList.remove('open');
+
+  function finishDuel(win, shieldSaved){
+    S.gate=null;
+    if(win){
+      S.stat.duelW++;
+      const firstClear = !S.gatesCleared.has(glv);
+      S.gatesCleared.add(glv);
+      S.lv=glv+1;
+      const bonusGold = grantRecordBonus(S.lv);   // S.record 갱신 전에 판정
+      S.record=Math.max(S.record,S.lv);
+      const reward=G.reward;
+      S.gold+=reward;S.stat.earn+=reward;
+      flash('승리','var(--jade)');sfx.duelWin();
+      if(shieldSaved) log(`⚔️ 첫 공격은 빗나갔지만 <b>전설의 방패</b>가 한 번 더 기회를 줬습니다!`,'info');
+      log(`⚔️ <b>${G.n}</b>을(를) 쓰러뜨렸습니다! ${glv}강 → <b>${S.lv}강</b>. 전리품 ${fmt(reward)} G 획득.`,'duel');
+      const gotItem = grantGateReward(glv);       // 격파 보상 100% 지급
+      if(firstClear) log(`이제부터 <b>${glv}강</b>을 지날 때 ${G.n}이(가) 다시 나타나지 않습니다.`,'gold');
+      if(glv===29) log('🐉 <b>전설의 용</b>이 무릎을 꿇었습니다. 이제 당신은 전설입니다.','gold');
+      render();
+      setTimeout(()=>{ showVictory(glv, G, gotItem, bonusGold, shieldSaved, glv===29); }, 620);
+    }else{
+      S.stat.duelL++;
+      S.lv=1;
+      $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),460);
+      flash('패배','var(--blood)');sfx.duelLose();
+      log(`⚔️ <b>${G.n}</b>에게 패배했습니다. ${glv}강 용사는 쓰러지고 <b>1강부터 다시</b> 시작합니다.`,'break');
+      maybeDropWeapon(glv, false);
+    }
+    if(usedName) log(`사용한 무기가 부서졌습니다: ${usedName}`,'keep');
+    else log('맨손으로 맞섰습니다.','keep');
+    render();
+    setTimeout(()=>{S.busy=false; syncItemLock(); render();},120);
+  }
+
+  const win1 = Math.random()<pct;
+  if(win1){ finishDuel(true,false); return; }
+
+  /* 첫 시도 패배 — 그 순간 타격음을 먼저 울린다 */
+  sfx.duelMiss();
+  flash('실패','var(--blood)');
+
+  /* 전설의 방패 사용 여부를 그 순간 물어봄 (전투당 1번만) */
+  if(S.inv.shield>0){
+    render();
+    askConfirm('패배...',
+      `${G.n}에게 패배했습니다.\n전설의 방패를 사용해 한 번 더 공격하시겠습니까?\n(보유 ${S.inv.shield}개)\n\n사용하지 않으면 1강으로 돌아갑니다.`,
+      ()=>{ // 사용 — 딱 1번 더 공격, 결과와 무관하게 방패는 이번 전투에서 더 쓸 수 없음
+        S.inv.shield--;
+        const win2 = Math.random()<pct;
+        if(!win2) sfx.duelMiss();
+        finishDuel(win2, win2);
+      },
+      ()=>{ finishDuel(false,false); },
+      '사용','1강으로'
+    );
+    return;
+  }
+  render();
+  askInfo('패배...', `${G.n}에게 패배했습니다.\n전설의 방패가 없습니다.`, ()=>{ finishDuel(false,false); }, '1강으로 돌아가기');
+}
+
+/* =====================================================================
+   10. 확률표 / 도감
+   ===================================================================== */
+const BLOCK = s => '▓'.repeat(Math.max(2, Math.min(8, s)));
+function openTable(){
+  $('btnClose').style.display='';
+  $('modal').dataset.mode='table';
+  $('sheetTitle').textContent='단계별 확률표';
+  $('sheetSub').innerHTML=`도달한 <b style="color:var(--gold)">${S.record}강</b>까지의 정보만 열람할 수 있습니다. 그 너머는 아직 안개 속입니다.`;
+  let h='<table><thead><tr><th>단계</th><th>이름</th><th>성공</th><th>소멸</th><th>비용</th><th>판매가</th></tr></thead><tbody>';
+  for(let lv=1;lv<=30;lv++){
+    const i=lv-1,last=lv===30;
+    const known = lv<=S.record;
+    const su=last?0:CONFIG.succ[i], bk=last?0:1-su;
+    const gateMark = isGate(lv) ? (S.gatesCleared.has(lv)?' <span style="color:var(--jade)">⚔✔</span>':' <span style="color:var(--blood)">⚔</span>') : '';
+    if(known){
+      h+=`<tr class="${lv===S.lv?'cur':''}"><td>${lv}강${gateMark}</td><td>${DEX[i].n}</td>
+        <td>${last?'—':(su*100).toFixed(0)+'%'}</td>
+        <td>${last?'—':(bk*100).toFixed(0)+'%'}</td>
+        <td>${last?'—':fmt(CONFIG.cost[i])}</td><td>${CONFIG.sell[i]==null?'판매 불가':fmt(CONFIG.sell[i])}</td></tr>`;
+    }else{
+      const dist=lv-S.record;
+      const blur=Math.min(5, 1 + dist*0.35).toFixed(2);
+      h+=`<tr class="fog" style="filter:blur(${blur}px)"><td>${lv}강${gateMark}</td><td>${BLOCK(DEX[i].n.length)}</td>
+        <td>${BLOCK(3)}</td><td>${BLOCK(3)}</td><td>${BLOCK(4)}</td><td>${BLOCK(4)}</td></tr>`;
+    }
+  }
+  $('sheetBody').innerHTML=h+'</tbody></table>';
+  $('modal').classList.add('open');
+}
+function openDex(){
+  $('btnClose').style.display='';
+  $('modal').dataset.mode='dex';
+  $('sheetTitle').textContent=`용사 도감 — ${S.record}/30 발견`;
+  $('sheetSub').textContent='직접 도달한 단계의 용사만 모습을 드러냅니다.';
+  let h='<div class="dex">';
+  for(let lv=1;lv<=30;lv++){
+    const seen=lv<=S.record;
+    h+=`<div class="dexCell ${seen?'':'locked'}">${heroVisual(lv,'d')}
+        <div class="dn">${seen?DEX[lv-1].n:'미지의 용사'}</div>
+        <div class="dl">${lv}강${isGate(lv)?' ⚔':''}</div></div>`;
+  }
+  $('sheetBody').innerHTML=h+'</div>';
+  $('modal').classList.add('open');
+}
+
+function openSwordDex(){
+  $('btnClose').style.display='';
+  $('modal').dataset.mode='sworddex';
+  const total=WEAPONS.length;
+  $('sheetTitle').textContent=`검 도감 — ${S.weaponSeen.size}/${total} 발견`;
+  $('sheetSub').textContent='한 번이라도 손에 넣어본 무기만 모습을 드러냅니다. 드랍·구매·조합으로 얻을 수 있습니다.';
+  let h='<div class="dex">';
+  for(let g=0; g<total; g++){
+    const seen=S.weaponSeen.has(g);
+    const W=WEAPONS[g];
+    const tag=g===SHOP_DAGGER_GRADE?'상점 전용':g===LEGENDARY_GRADE?'26강+ 초희귀 드랍':(g+1)+'급';
+    h+=`<div class="dexCell ${seen?'':'locked'}">
+        <div style="padding:10px 0;width:44%;margin:0 auto">${seen?weaponIcon(g):''}</div>
+        <div class="dn">${seen?W.n:'미지의 무기'}</div>
+        <div class="dl">${seen?('위력 '+fmt(W.p)+' · '+tag):tag}</div></div>`;
+  }
+  $('sheetBody').innerHTML=h+'</div>';
+  $('modal').classList.add('open');
+}
+
+/* =====================================================================
+   11. 이벤트
+   ===================================================================== */
+$('btnUp').addEventListener('click',()=>{ if(S.gate!==null) openDuel(); else enhance(); });
+$('btnSell').addEventListener('click',sell);
+document.querySelectorAll('[data-buy]').forEach(b=>b.addEventListener('click',()=>buy(b.dataset.buy)));
+function showTab(name){
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
+  document.querySelector(`.tabs button[data-tab="${name}"]`).classList.add('on');
+  $('pane-'+name).classList.add('on');
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  if(b.dataset.tab==='item' && (S.lv!==1 || S.gate!==null)) return;   // 아이템 구매는 1강일 때만
+  showTab(b.dataset.tab);
+}));
+$('btnTable').addEventListener('click',openTable);
+$('btnDex').addEventListener('click',openDex);
+$('btnSwordDex').addEventListener('click',openSwordDex);
+const duelLocked = () => (S.gate!==null && $('modal').dataset.mode==='duel') || $('modal').dataset.mode==='confirm' || $('modal').dataset.mode==='victory' || $('modal').dataset.mode==='forge';
+$('btnClose').addEventListener('click',()=>{ if(!duelLocked()) $('modal').classList.remove('open'); });
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal'&&!duelLocked())$('modal').classList.remove('open');});
+$('ladder').addEventListener('click',e=>{if(e.target.classList.contains('rung')&&!duelLocked())openDex();});
+$('btnSound').addEventListener('click',e=>{
+  S.sound=!S.sound;
+  e.currentTarget.firstChild.textContent=S.sound?'소리 끄기':'소리 켜기';
+  if(S.sound)sfx.coin();
+});
+$('btnDebugGive').addEventListener('click',()=>{
+  askConfirm('테스트 자원 지급',
+    '테스트용으로 부활권 100개, 골드 100억, 전설의 검 100개를 지급하고,\n25강부터는 강화 확률을 100%로 바꿉니다.\n(게임 기본 설정은 바뀌지 않으며, "처음부터"를 누르면 완전히 원상복구됩니다)\n계속할까요?',
+    ()=>{
+      S.gold = 10000000000;      // 100억 — 기본 시작 골드(CONFIG.startGold)는 그대로 둠
+      S.inv.revive = 100;        // 부활권 100개 — 기본값(0)은 CONFIG/리셋 로직에 남아있음
+      for(let i=0;i<100;i++) S.weapons.push(LEGENDARY_GRADE);  // 전설의 검 100개 (테스트용, 보관 한도 무시)
+      S.weaponSeen.add(LEGENDARY_GRADE);
+      S.debugEasyMode = true;    // 25강부터 강화 100%
+      log('🧪 <b>테스트 지급</b>: 골드 100억, 용사 부활권 100개, 전설의 검 100개를 받았습니다. 25강부터 강화 확률 100%입니다. 테스트가 끝나면 "처음부터"로 되돌리세요.','gold');
+      render();
+    });
+});
+$('btnReset').addEventListener('click',()=>{
+  askConfirm('처음으로', '처음으로 돌아가시겠습니까?', ()=>{
+    Object.assign(S,{lv:1,gold:CONFIG.startGold,record:1,gate:null,gatesCleared:new Set(),
+      inv:{revive:0,dagger:0,shield:0},
+      weapons:[],duelPick:null,weaponSeen:new Set(),debugEasyMode:false,
+      stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0}});
+    $('log').innerHTML='';lastLv=0;
+    log('새로운 용사가 제단 앞에 섰습니다.','info');
+    render();
+  }, null, '예', '아니요');
+});
+document.addEventListener('keydown',e=>{
+  if(duelLocked()){ if(e.code==='Space')e.preventDefault(); return; }
+  if(e.code==='Space'){e.preventDefault();enhance();}
+  if(e.key.toLowerCase()==='s')sell();
+  if(e.key==='Escape')$('modal').classList.remove('open');
+});
+
+/* 시작 */
+buildLadder();
+log('<b>1강 낡은 용사</b>가 제단 앞에 섰습니다. 강화를 시작하세요.','info');
+log('강화는 <b>성공 아니면 소멸</b>입니다. 실패하면 그 자리에서 1강으로 돌아갑니다.','break');
+log('9→10 · 14→15 · 19→20 · 24→25 · 29→30강 사이에는 몬스터가 길을 막습니다. 관문에는 부활권이 통하지 않으니 전설의 방패를 챙기세요.','duel');
+render();
+</script>
+</body>
+</html>
