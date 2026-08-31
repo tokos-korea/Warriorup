@@ -607,27 +607,17 @@ const ASSETS = {
   heroFile: lv => `hero-${lv}.png`
 };
 
-/* 이미지 존재 여부 캐시: 'ok' | 'fail' | undefined(아직 확인 안 함) */
-const _assetStatus = {};
-
 function assetUrl(file){ return ASSETS.basePath + file; }
 
-/* 이미지를 미리 로드해서 사용 가능 여부를 캐시에 기록.
-   결과가 바뀌면 onReady를 호출해 화면을 다시 그린다. */
-function probeAsset(file, onReady){
-  if(!ASSETS.enabled || !file) return false;
-  const st = _assetStatus[file];
-  if(st === 'ok') return true;
-  if(st === 'fail') return false;
-  _assetStatus[file] = 'pending';
-  const img = new Image();
-  img.onload  = ()=>{ _assetStatus[file]='ok';   if(onReady) onReady(); };
-  img.onerror = ()=>{ _assetStatus[file]='fail'; };
-  img.src = assetUrl(file);
-  return false;   // 이번 렌더에서는 아직 SVG를 사용
-}
-function assetReady(file){
-  return ASSETS.enabled && !!file && _assetStatus[file]==='ok';
+/* 이미지를 <img>로 바로 렌더링하고, 로딩 실패(onerror) 시에만 그 자리에서
+   기존 SVG로 교체한다. root 하위의 data-fallback-* 이미지들에 1회성 핸들러를 건다. */
+function bindAssetFallbacks(root){
+  (root||document).querySelectorAll('img[data-fallback-monster]').forEach(img=>{
+    img.addEventListener('error', ()=>{ img.outerHTML = monsterSVG(img.dataset.fallbackMonster); }, {once:true});
+  });
+  (root||document).querySelectorAll('img[data-fallback-hero]').forEach(img=>{
+    img.addEventListener('error', ()=>{ img.outerHTML = heroSVG(+img.dataset.fallbackHero, img.dataset.fallbackTag||undefined); }, {once:true});
+  });
 }
 
 const CONFIG = {
@@ -958,11 +948,8 @@ dragon(){return `
    glv: 관문 단계(9/14/19/24/29), art: 내장 SVG 키 */
 function monsterVisual(glv, art){
   const file = ASSETS.monster[glv];
-  if(assetReady(file)){
-    return `<img class="monImg" src="${assetUrl(file)}" alt="${art}">`;
-  }
-  probeAsset(file, ()=>{ if(S.gate!==null && $('modal').classList.contains('open')) renderDuel(); });
-  return monsterSVG(art);
+  if(!ASSETS.enabled || !file) return monsterSVG(art);
+  return `<img class="monImg" data-fallback-monster="${art}" src="${assetUrl(file)}" alt="${art}">`;
 }
 function monsterSVG(art){
   return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">${MONSTER_ART[art]()}</svg>`;
@@ -1293,11 +1280,8 @@ function heroSVG(lv, tag){
    단계별로 따로 판정하므로 일부만 교체해도 정상 동작한다. */
 function heroVisual(lv, tag){
   const file = ASSETS.heroFile(lv);
-  if(assetReady(file)){
-    return `<img class="heroImg" src="${assetUrl(file)}" alt="${lv}강 ${DEX[lv-1].n}">`;
-  }
-  probeAsset(file, ()=>{ lastLv = 0; render(); });
-  return heroSVG(lv, tag);
+  if(!ASSETS.enabled || !file) return heroSVG(lv, tag);
+  return `<img class="heroImg" data-fallback-hero="${lv}" data-fallback-tag="${tag||''}" src="${assetUrl(file)}" alt="${lv}강 ${DEX[lv-1].n}">`;
 }
 
 /* =====================================================================
@@ -1422,6 +1406,7 @@ function render(){
 
   if(lastLv!==S.lv){
     $('heroBox').innerHTML=heroVisual(S.lv);
+    bindAssetFallbacks($('heroBox'));
     $('heroBox').classList.remove('pulse');void $('heroBox').offsetWidth;$('heroBox').classList.add('pulse');
     lastLv=S.lv;
   }
@@ -1999,6 +1984,7 @@ function renderDuel(){
       </div>
 
     </div>`;
+  bindAssetFallbacks($('sheetBody'));
 
   $('sheetBody').querySelectorAll('.dwCard').forEach(c=>c.addEventListener('click',()=>{
     const s=+c.dataset.slot;
@@ -2128,6 +2114,7 @@ function openDex(){
         <div class="dl">${lv}강${isGate(lv)?' ⚔':''}</div></div>`;
   }
   $('sheetBody').innerHTML=h+'</div>';
+  bindAssetFallbacks($('sheetBody'));
   $('modal').classList.add('open');
 }
 
