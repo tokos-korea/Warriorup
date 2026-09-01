@@ -58,22 +58,62 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 @media(max-width:940px){.rung{height:10px;font-size:0}.rung.now{font-size:0}}
 
 .altar{background:linear-gradient(180deg,var(--stone-2),var(--stone));border:1px solid var(--line);
-  border-radius:18px;padding:14px 14px 12px;position:relative;overflow:hidden}
+  border-radius:18px;padding:14px 14px 12px;position:relative;overflow:hidden;
+  container:altarBox / inline-size}
 .altar::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(440px 320px at 50% 34%, var(--tier) 0%, transparent 62%);opacity:.14;transition:.45s}
-.altar.shake{animation:shake .45s}
-@keyframes shake{0%,100%{transform:translate(0,0)}15%{transform:translate(-8px,3px) rotate(-.6deg)}
-  35%{transform:translate(7px,-4px) rotate(.5deg)}55%{transform:translate(-5px,2px)}75%{transform:translate(4px,-2px)}}
+.altar.shake{animation:shake .55s}
+@keyframes shake{0%,100%{transform:translate(0,0)}
+  8%{transform:translate(-11px,5px) rotate(-.9deg)}
+  20%{transform:translate(10px,-6px) rotate(.8deg)}
+  33%{transform:translate(-9px,4px) rotate(-.7deg)}
+  46%{transform:translate(8px,-4px) rotate(.6deg)}
+  60%{transform:translate(-6px,3px) rotate(-.4deg)}
+  74%{transform:translate(4px,-2px)}
+  88%{transform:translate(-2px,1px)}}
 .stage{display:flex;flex-direction:column;align-items:center;position:relative}
+.stageInfo{display:flex;flex-direction:column;align-items:center;width:100%;min-width:0}
 .tierTag{font-size:10px;letter-spacing:.2em;color:var(--tier);font-weight:700;
   border:1px solid var(--tier);border-radius:999px;padding:2px 10px;opacity:.9}
 
-.heroBox{position:relative;width:min(168px,42vw);aspect-ratio:200/250;margin:2px 0}
+.heroBox{position:relative;width:min(210px,48vw);aspect-ratio:200/250;margin:2px 0;flex:none}
 .heroBox svg,.heroBox .heroImg{width:100%;height:100%;display:block;object-fit:contain;
   filter:drop-shadow(0 6px 22px rgba(0,0,0,.55));animation:float 3.8s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .heroBox.pulse svg{animation:float 3.8s ease-in-out infinite, pulseIn .55s ease-out}
 @keyframes pulseIn{0%{filter:drop-shadow(0 0 0 #fff) brightness(2.6)}100%{filter:drop-shadow(0 6px 22px rgba(0,0,0,.55)) brightness(1)}}
+/* 강화 성공/소멸 시 용사 일러스트 자체에 거는 순간 이펙트.
+   #heroBox 컨테이너에 걸어 두면 render()가 내부 innerHTML을 교체해도 애니메이션이 유지된다. */
+.heroBox.fxWin{animation:heroWin .5s ease-out}
+@keyframes heroWin{
+  0%{filter:drop-shadow(0 0 0 rgba(61,220,151,0)) brightness(1)}
+  22%{filter:drop-shadow(0 0 26px rgba(61,220,151,.95)) drop-shadow(0 0 46px rgba(245,196,81,.7)) brightness(1.35)}
+  100%{filter:drop-shadow(0 0 0 rgba(61,220,151,0)) brightness(1)}}
+.heroBox.fxBrk{animation:heroBrk .85s ease-in-out}
+@keyframes heroBrk{
+  0%{filter:grayscale(1) brightness(.35);opacity:1;transform:scale(1)}
+  35%{filter:grayscale(1) brightness(.12);opacity:.12;transform:scale(.96)}
+  60%{filter:grayscale(1) brightness(.1);opacity:.05;transform:scale(.95)}
+  100%{filter:grayscale(0) brightness(1);opacity:1;transform:scale(1)}}
+
+/* ===== 강화 화면 2단 레이아웃 =====
+   대결 화면(.duelStage / .dLeft / .dRight)과 같은 "넓으면 좌우 2단, 좁으면 위아래 1단"
+   방식. 단, 기준을 뷰포트가 아니라 altar 자신의 폭(@container)으로 잡는다.
+   가운데 열이 좁아지는 3단 그리드 구간(뷰포트 941~1200px)에서도 altar 실제 폭을
+   보고 판단해야 오른쪽 글자 열이 찌부러지지 않기 때문이다.
+   - altar 폭 480px 이상: 왼쪽에 크게 키운 일러스트, 오른쪽에 정보/버튼 세로 배치
+   - 그 미만(폰 등): 기존처럼 위아래 1단, 일러스트는 min(px,vw)로 폭에 맞춰 축소
+   일러스트 폭은 48cqi(altar 폭의 48%)로 늘리되 최대 340px에서 멈춰,
+   원본 이미지(약 1122×1402)의 해상도를 넘겨 확대하지 않는다. */
+@container altarBox (min-width:480px){
+  .stage{flex-direction:row;align-items:center;gap:clamp(16px,3.5cqi,30px)}
+  .heroBox{width:clamp(200px,48cqi,340px);margin:0}
+  .stageInfo{flex:1;align-items:flex-start}
+  .stageInfo .heroName,
+  .stageInfo .heroDesc,
+  .stageInfo .powerLine{text-align:left}
+  .stageInfo .heroDesc{margin-left:0;margin-right:0}
+}
 
 .lvLine{display:flex;align-items:baseline;gap:8px}
 .lvNum{font-family:'Black Han Sans',sans-serif;font-size:28px;line-height:1;color:var(--tier);text-shadow:0 0 16px var(--tier)}
@@ -113,11 +153,44 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .btn-sub:hover{border-color:var(--gold);color:var(--gold)}
 .costNote{font-size:11px;font-weight:500;opacity:.8;display:block;margin-top:2px}
 
-.flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+.flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:5;
   font-family:'Black Han Sans',sans-serif;font-size:clamp(34px,8.5vw,60px);pointer-events:none;opacity:0;text-align:center}
 .flash.go{animation:pop 1s ease-out}
 @keyframes pop{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1.08)}
   72%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+/* 성공/소멸 전용 연출 — 튀는 느낌(성공) / 부서지듯 흔들리는 느낌(소멸) + 글자 발광 */
+.flash.fWin,.flash.fBrk{text-shadow:0 0 22px currentColor,0 0 46px currentColor}
+.flash.go.fWin{animation:popWin 1s cubic-bezier(.2,1.5,.35,1)}
+.flash.go.fBrk{animation:popBrk .9s ease-out}
+@keyframes popWin{
+  0%{opacity:0;transform:scale(.4)}
+  18%{opacity:1;transform:scale(1.28)}
+  32%{transform:scale(.9) rotate(-3deg)}
+  44%{transform:scale(1.14) rotate(2deg)}
+  56%{transform:scale(.98) rotate(-1deg)}
+  68%{opacity:1;transform:scale(1.05)}
+  100%{opacity:0;transform:scale(1.32)}}
+@keyframes popBrk{
+  0%{opacity:0;transform:scale(.5)}
+  14%{opacity:1;transform:scale(1.12)}
+  26%{transform:translate(-7px,2px) rotate(-2.5deg)}
+  38%{transform:translate(7px,-2px) rotate(2.5deg)}
+  50%{transform:translate(-6px,1px) rotate(-1.5deg)}
+  62%{transform:translate(4px,-1px) rotate(1deg)}
+  74%{opacity:1;transform:translate(0,0)}
+  100%{opacity:0;transform:scale(1.14) translateY(-6px)}}
+/* 화면 가장자리 빛 번짐 / 붉은 비네트 — body 직속 고정 오버레이 1개, 한 방 재생 */
+.fxVeil{position:fixed;inset:0;pointer-events:none;z-index:45;opacity:0}
+.fxVeil.win{animation:veilWin .55s ease-out}
+.fxVeil.brk{animation:veilBrk .6s ease-out}
+@keyframes veilWin{
+  0%{opacity:0;box-shadow:inset 0 0 0 0 rgba(61,220,151,0)}
+  28%{opacity:1;box-shadow:inset 0 0 120px 26px rgba(61,220,151,.5),inset 0 0 260px 90px rgba(245,196,81,.32)}
+  100%{opacity:0;box-shadow:inset 0 0 40px 0 rgba(61,220,151,0)}}
+@keyframes veilBrk{
+  0%{opacity:0;box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}
+  20%{opacity:1;box-shadow:inset 0 0 150px 46px rgba(229,72,77,.58),inset 0 0 340px 120px rgba(110,0,0,.5)}
+  100%{opacity:0;box-shadow:inset 0 0 40px 0 rgba(229,72,77,0)}}
 
 /* 사이드 탭 */
 .side{display:flex;flex-direction:column;gap:14px}
@@ -417,6 +490,7 @@ tr.fog{position:relative}
 </head>
 <body>
 <div class="toastBox" id="toastBox"></div>
+<div class="fxVeil" id="fxVeil"></div>
 <div class="wrap">
 
   <div class="topbar">
@@ -435,36 +509,38 @@ tr.fog{position:relative}
 
     <div class="altar" id="altar">
       <div class="stage">
-        <div class="tierTag" id="uiTier">범인의 계단</div>
         <div class="heroBox" id="heroBox"></div>
-        <div class="lvLine"><span class="lvNum" id="uiLv">1<small>강</small></span></div>
-        <div class="heroName" id="uiName">낡은 용사</div>
-        <div class="heroDesc" id="uiDesc"></div>
-        <div class="powerLine">전투력 <b id="uiPower">10</b> · 판매가 <b id="uiSell">50</b> G</div>
+        <div class="stageInfo">
+          <div class="tierTag" id="uiTier">범인의 계단</div>
+          <div class="lvLine"><span class="lvNum" id="uiLv">1<small>강</small></span></div>
+          <div class="heroName" id="uiName">낡은 용사</div>
+          <div class="heroDesc" id="uiDesc"></div>
+          <div class="powerLine">전투력 <b id="uiPower">10</b> · 판매가 <b id="uiSell">50</b> G</div>
 
-        <div class="gateWarn" id="gateWarn" style="display:none"></div>
-        <div class="gateWarn" id="reviveWarn" style="display:none;background:rgba(245,196,81,.1);border-color:rgba(245,196,81,.45)"></div>
+          <div class="gateWarn" id="gateWarn" style="display:none"></div>
+          <div class="gateWarn" id="reviveWarn" style="display:none;background:rgba(245,196,81,.1);border-color:rgba(245,196,81,.45)"></div>
 
-        <div class="odds" id="oddsBox">
-          <div class="oddsHead">
-            <span id="uiNext">다음 단계</span>
-            <span>성공확률 <b id="uiSucc">100%</b></span>
+          <div class="odds" id="oddsBox">
+            <div class="oddsHead">
+              <span id="uiNext">다음 단계</span>
+              <span>성공확률 <b id="uiSucc">100%</b></span>
+            </div>
+            <div class="bar">
+              <span class="b-succ" id="barSucc"></span><span class="b-break" id="barBreak"></span>
+            </div>
+            <div class="legend">
+              <span><i style="background:var(--jade)"></i>성공 — 다음 단계로</span>
+              <span><i style="background:var(--blood)"></i>소멸 — 1강으로</span>
+            </div>
           </div>
-          <div class="bar">
-            <span class="b-succ" id="barSucc"></span><span class="b-break" id="barBreak"></span>
-          </div>
-          <div class="legend">
-            <span><i style="background:var(--jade)"></i>성공 — 다음 단계로</span>
-            <span><i style="background:var(--blood)"></i>소멸 — 1강으로</span>
+
+          <div class="actions" id="mainActions">
+            <button class="btn btn-main" id="btnUp">강화하기<small class="costNote" id="uiCost">100 G</small></button>
+            <button class="btn btn-sub" id="btnSell">판매<small class="costNote" id="uiSell2">50 G</small></button>
           </div>
         </div>
-
-        <div class="actions" id="mainActions">
-          <button class="btn btn-main" id="btnUp">강화하기<small class="costNote" id="uiCost">100 G</small></button>
-          <button class="btn btn-sub" id="btnSell">판매<small class="costNote" id="uiSell2">50 G</small></button>
-        </div>
+        <div class="flash" id="flash"></div>
       </div>
-      <div class="flash" id="flash"></div>
     </div>
 
     <div class="side">
@@ -477,8 +553,8 @@ tr.fog{position:relative}
       <!-- 아이템 탭 -->
       <div class="pane" id="pane-item">
         <div class="card">
-          <h2>상점 <em style="font-size:10.5px">1강일 때만 구매 가능</em></h2>
-          <p style="font-size:11px;color:var(--ash);line-height:1.6;margin-bottom:8px">강화를 시작해 2강 이상이 되면 구매할 수 없습니다. 부활권·방패는 <b style="color:var(--bone)">미리 사두고</b> 도전하세요.</p>
+          <h2>상점</h2>
+          <p style="font-size:11px;color:var(--ash);line-height:1.6;margin-bottom:8px">부활권·방패는 강화 중에도 언제든 구매할 수 있습니다. <b style="color:var(--bone)">미리 챙겨두고</b> 도전하세요.</p>
           <div class="item"><span class="ico">🧿</span>
             <span class="txt"><span class="nm">용사 부활권<span class="own" id="oRevive">×0</span></span>
             <span class="ds">강화 실패 시 1강으로 돌아가지 않고 그 자리에서 재도전합니다.</span></span>
@@ -554,7 +630,7 @@ tr.fog{position:relative}
           </div>
           <div class="actions" style="max-width:none;margin-top:10px">
             <button class="btn btn-sub" id="btnTable" style="min-width:0">확률표</button>
-            <button class="btn btn-sub" id="btnSound" style="min-width:0">소리 켜기</button>
+            <button class="btn btn-sub" id="btnSound" style="min-width:0">소리 끄기</button>
           </div>
           <div class="actions" style="max-width:none;margin-top:10px">
             <button class="btn btn-sub" id="btnDebugGive" style="width:100%;min-width:0;border-color:#e5484d;color:#ff9aa0">🧪 테스트: 자원 지급 + 25강↑ 강화 100%</button>
@@ -1296,7 +1372,7 @@ const S = {
   weaponSeen:new Set(),  // 검 도감 — 한 번이라도 손에 넣어본 무기 등급
   duelPick:null,         // 대결에 들고 갈 무기 슬롯 번호 (단 1자루, null=맨손)
   stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0},
-  sound:false, busy:false, debugEasyMode:false
+  sound:true, busy:false, debugEasyMode:false
 };
 
 const $ = id => document.getElementById(id);
@@ -1356,9 +1432,37 @@ function log(msg,cls){
   const box=$('log');box.prepend(p);
   while(box.children.length>70) box.lastChild.remove();
 }
-function flash(t,c){
+/* kind: 'win' → 튀는 연출 + 발광 / 'brk' → 부서지듯 흔들리는 연출 / 그 외 → 기본 pop */
+function flash(t,c,kind){
   const f=$('flash');f.textContent=t;f.style.color=c;
-  f.classList.remove('go');void f.offsetWidth;f.classList.add('go');
+  f.classList.remove('go','fWin','fBrk');
+  if(kind==='win') f.classList.add('fWin');
+  else if(kind==='brk') f.classList.add('fBrk');
+  /* 이중 requestAnimationFrame: 클래스 제거가 실제 렌더에 반영된 뒤 다음 프레임에 재부여해
+     브라우저 애니메이션 재시작을 안정적으로 동기화한다. */
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ f.classList.add('go'); }));
+}
+/* 용사 일러스트 순간 이펙트. #heroBox 컨테이너에 클래스를 걸고 타이머로 반드시 제거해
+   연속 강화로 이펙트가 겹쳐도 클래스가 남아 꼬이지 않도록 한다. */
+let heroFxTimer=null;
+function heroFx(kind){
+  const b=$('heroBox');
+  b.classList.remove('fxWin','fxBrk');
+  clearTimeout(heroFxTimer);
+  void b.offsetWidth;
+  const cls=kind==='brk'?'fxBrk':'fxWin';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.classList.add(cls); }));
+  heroFxTimer=setTimeout(()=>b.classList.remove('fxWin','fxBrk'), kind==='brk'?1100:700);
+}
+/* 화면 가장자리 빛번짐(성공) / 붉은 비네트(소멸). 오버레이 1개 재사용. */
+let screenFxTimer=null;
+function screenFx(kind){
+  const v=$('fxVeil');if(!v) return;
+  v.classList.remove('win','brk');
+  clearTimeout(screenFxTimer);
+  void v.offsetWidth;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ v.classList.add(kind==='brk'?'brk':'win'); }));
+  screenFxTimer=setTimeout(()=>v.classList.remove('win','brk'), 750);
 }
 function toast(msg){
   const box=$('toastBox');
@@ -1384,23 +1488,23 @@ function buildLadder(){
 }
 
 let lastLv=0;
-/* 아이템 탭 잠금 — 아이템 구매는 오직 1강일 때만 가능.
-   강화를 한 번이라도 성공해 2강 이상으로 올라가면, 실패해서 1강으로
-   돌아오거나 판매로 1강이 될 때까지 아이템 탭이 잠긴다.
-   (부활권 등은 1강일 때 미리 사두고 전략을 짜는 것이 의도된 설계)
+/* 아이템 탭 잠금 — 관문 몬스터와 대결 중일 때만 잠근다.
+   (강화 진행 중에도 아이템 구매는 자유롭게 가능. 워프권만 워프권 고유 규칙으로 1강 한정)
    판매는 이 잠금과 무관하게 언제든 가능하다. */
 function syncItemLock(){
-  const locked = S.lv !== 1 || S.gate !== null;
+  const locked = S.gate !== null;
   const itemTabBtn = document.querySelector('.tabs button[data-tab="item"]');
   if(!itemTabBtn) return;
   itemTabBtn.disabled = locked;
-  itemTabBtn.title = locked ? '아이템 구매는 1강일 때만 가능합니다' : '';
+  itemTabBtn.title = locked ? '관문 대결 중에는 이용할 수 없습니다' : '';
   const itemPane = document.getElementById('pane-item');
   if(locked && itemPane && itemPane.classList.contains('on')) showTab('rec');
 }
 
 function render(){
   syncItemLock();
+  const soundBtn=$('btnSound');
+  if(soundBtn) soundBtn.textContent = S.sound ? '소리 끄기' : '소리 켜기';
   const D=DEX[idx()],P=D.P,o=outcome(S.lv),rs=document.documentElement.style;
   rs.setProperty('--tier',P.hi);rs.setProperty('--tier-dark',P.a);rs.setProperty('--glow',P.g);
 
@@ -1483,7 +1587,7 @@ function render(){
   /* 부활권 보유 현황 (상점 표시용) */
   $('oRevive').textContent='×'+S.inv.revive;
 
-  /* 상점 가격 — 아이템 구매는 1강일 때만 가능 */
+  /* 상점 가격 — 대결 중이거나 골드가 부족하면 비활성. 워프권만 1강 한정 유지 */
   document.querySelectorAll('[data-buy]').forEach(b=>{
     const k=b.dataset.buy;
     let p;
@@ -1493,7 +1597,7 @@ function render(){
     else if(k==='shield') p=CONFIG.shieldPrice;
     else p=CONFIG.warp[k].price;
     b.textContent=fmt(p)+' G';
-    b.disabled = (S.lv!==1 || S.gate!==null) || S.gold<p;
+    b.disabled = (S.gate!==null) || S.gold<p || (CONFIG.warp[k] && S.lv!==1);
   });
   $('oDagger').textContent='×'+S.weapons.filter(g=>g===SHOP_DAGGER_GRADE).length;
   $('oShield').textContent='×'+S.inv.shield;
@@ -1771,9 +1875,9 @@ function enhance(){
   function destroyHero(){
     S.stat.brk++;
     S.lv=1;
-    flash('소멸','var(--blood)');sfx.brk();
+    flash('소멸','var(--blood)','brk');sfx.brk();heroFx('brk');screenFx('brk');
     log(`<b>${before}강 ${name}</b>이(가) 빛으로 흩어졌습니다. <b>1강부터 다시</b> 시작합니다.`,'break');
-    $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),460);
+    $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),560);
     maybeDropWeapon(before, false);
     finishEnhance();
   }
@@ -1794,7 +1898,7 @@ function enhance(){
     S.lv++;
     grantRecordBonus(S.lv);                    // S.record 갱신 전에 판정
     S.record=Math.max(S.record,S.lv);
-    flash('성공','var(--jade)');sfx.win();
+    flash('성공','var(--jade)','win');sfx.win();heroFx('win');screenFx('win');
     if(isGate(before)) log(`<b>${before}강 → ${S.lv}강</b> ${DEX[S.lv-1].n}(으)로 거듭났습니다. 이미 물리친 <b>${GATES[before].n}</b>은 다시 나타나지 않았습니다.`,'succ');
     else log(`<b>${before}강 → ${S.lv}강</b> ${DEX[S.lv-1].n}(으)로 거듭났습니다.`,'succ');
     finishEnhance();
@@ -1803,7 +1907,7 @@ function enhance(){
     const req=reviveCostFor(before);
     const eligible = req!=null && S.inv.revive>=req;
 
-    flash('실패','var(--blood)'); sfx.brk();
+    flash('실패','var(--blood)','brk'); sfx.brk();
     log(`<b>${before}강 ${name}</b> 강화에 실패했습니다.`,'break');
 
     if(eligible){
@@ -1842,11 +1946,12 @@ function sell(){
 const ITEM_NAME={revive1:'용사 부활권',revive3:'용사 부활권 3개 묶음',dagger:'일반 단검',shield:'전설의 방패',
   w9:'9강 워프권',w13:'13강 워프권',w14:'14강 워프권',w15:'15강 워프권'};
 function buy(k){
-  /* 아이템 구매는 오직 1강일 때만 가능 (대결 중에도 불가) */
+  /* 관문 대결 중에는 아이템 구매 불가 */
   if(S.gate!==null) return;
-  if(S.lv!==1){ log('아이템 구매는 <b>1강</b>일 때만 가능합니다.','info'); return; }
   if(CONFIG.warp[k]){
     const W=CONFIG.warp[k];
+    /* 워프권 고유 규칙 — 1강일 때만 사용 가능 (다른 단계로 점프하는 아이템이므로) */
+    if(S.lv!==1){ log('워프권은 <b>1강</b>일 때만 구매할 수 있습니다.','info'); return; }
     if(S.gold<W.price) return;
     S.gold-=W.price; S.stat.spend+=W.price;
     S.lv=W.lv; S.record=Math.max(S.record,S.lv); S.stat.streak=0;
@@ -2033,8 +2138,8 @@ function fight(){
     }else{
       S.stat.duelL++;
       S.lv=1;
-      $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),460);
-      flash('패배','var(--blood)');sfx.duelLose();
+      $('altar').classList.add('shake');setTimeout(()=>$('altar').classList.remove('shake'),560);
+      flash('패배','var(--blood)','brk');sfx.duelLose();heroFx('brk');screenFx('brk');
       log(`⚔️ <b>${G.n}</b>에게 패배했습니다. ${glv}강 용사는 쓰러지고 <b>1강부터 다시</b> 시작합니다.`,'break');
       maybeDropWeapon(glv, false);
     }
@@ -2151,7 +2256,7 @@ function showTab(name){
   $('pane-'+name).classList.add('on');
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
-  if(b.dataset.tab==='item' && (S.lv!==1 || S.gate!==null)) return;   // 아이템 구매는 1강일 때만
+  if(b.dataset.tab==='item' && S.gate!==null) return;   // 관문 대결 중에는 아이템 탭 불가
   showTab(b.dataset.tab);
 }));
 $('btnTable').addEventListener('click',openTable);
@@ -2183,7 +2288,7 @@ $('btnReset').addEventListener('click',()=>{
   askConfirm('처음으로', '처음으로 돌아가시겠습니까?', ()=>{
     Object.assign(S,{lv:1,gold:CONFIG.startGold,record:1,gate:null,gatesCleared:new Set(),
       inv:{revive:0,dagger:0,shield:0},
-      weapons:[],duelPick:null,weaponSeen:new Set(),debugEasyMode:false,
+      weapons:[],duelPick:null,weaponSeen:new Set(),debugEasyMode:false,sound:true,
       stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0}});
     $('log').innerHTML='';lastLv=0;
     log('새로운 용사가 제단 앞에 섰습니다.','info');
