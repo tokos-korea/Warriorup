@@ -655,9 +655,6 @@ tr.fog{position:relative}
             <button class="btn btn-sub" id="btnSound" style="min-width:0">소리 끄기</button>
           </div>
           <div class="actions" style="max-width:none;margin-top:10px">
-            <button class="btn btn-sub" id="btnDebugGive" style="width:100%;min-width:0;border-color:#e5484d;color:#ff9aa0">🧪 테스트: 자원 지급 + 25강↑ 강화 100%</button>
-          </div>
-          <div class="actions" style="max-width:none;margin-top:10px">
             <button class="btn btn-sub" id="btnReset" style="width:100%;min-width:0">처음부터</button>
           </div>
         </div>
@@ -1394,7 +1391,7 @@ const S = {
   weaponSeen:new Set(),  // 검 도감 — 한 번이라도 손에 넣어본 무기 등급
   duelPick:null,         // 대결에 들고 갈 무기 슬롯 번호 (단 1자루, null=맨손)
   stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0},
-  sound:true, busy:false, debugEasyMode:false
+  sound:true, busy:false
 };
 
 const $ = id => document.getElementById(id);
@@ -1416,7 +1413,6 @@ function tierName(lv){let t=CONFIG.tiers[0];for(const x of CONFIG.tiers) if(lv>=
 function outcome(lv){
   const i=lv-1;
   if(lv>=30) return {succ:0,brk:0};
-  if(S.debugEasyMode && lv>=25) return {succ:1,brk:0};   // 테스트 모드: 25강부터 강화 100%
   return {succ:CONFIG.succ[i], brk:1-CONFIG.succ[i]};
 }
 function reviveCostFor(lv){ return CONFIG.reviveCost[lv-1]; }   // null = 사용 불가
@@ -2312,24 +2308,11 @@ $('btnSound').addEventListener('click',e=>{
   e.currentTarget.firstChild.textContent=S.sound?'소리 끄기':'소리 켜기';
   if(S.sound)sfx.coin();
 });
-$('btnDebugGive').addEventListener('click',()=>{
-  askConfirm('테스트 자원 지급',
-    '테스트용으로 부활권 100개, 골드 100억, 전설의 검 100개를 지급하고,\n25강부터는 강화 확률을 100%로 바꿉니다.\n(게임 기본 설정은 바뀌지 않으며, "처음부터"를 누르면 완전히 원상복구됩니다)\n계속할까요?',
-    ()=>{
-      S.gold = 10000000000;      // 100억 — 기본 시작 골드(CONFIG.startGold)는 그대로 둠
-      S.inv.revive = 100;        // 부활권 100개 — 기본값(0)은 CONFIG/리셋 로직에 남아있음
-      for(let i=0;i<100;i++) S.weapons.push(LEGENDARY_GRADE);  // 전설의 검 100개 (테스트용, 보관 한도 무시)
-      S.weaponSeen.add(LEGENDARY_GRADE);
-      S.debugEasyMode = true;    // 25강부터 강화 100%
-      log('🧪 <b>테스트 지급</b>: 골드 100억, 용사 부활권 100개, 전설의 검 100개를 받았습니다. 25강부터 강화 확률 100%입니다. 테스트가 끝나면 "처음부터"로 되돌리세요.','gold');
-      render();
-    });
-});
 $('btnReset').addEventListener('click',()=>{
   askConfirm('처음으로', '처음으로 돌아가시겠습니까?', ()=>{
     Object.assign(S,{lv:1,gold:CONFIG.startGold,record:1,gate:null,gatesCleared:new Set(),
       inv:{revive:0,dagger:0,shield:0},
-      weapons:[],duelPick:null,weaponSeen:new Set(),debugEasyMode:false,sound:true,
+      weapons:[],duelPick:null,weaponSeen:new Set(),sound:true,
       stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0}});
     $('log').innerHTML='';lastLv=0;
     log('새로운 용사가 제단 앞에 섰습니다.','info');
