@@ -681,7 +681,7 @@ tr.fog{position:relative}
    ---------------------------------------------------------------------
    · 파일이 없거나 로드에 실패하면 자동으로 기존 SVG 일러스트로 대체됩니다.
      (없는 파일은 그냥 두면 되고, 콘솔 에러도 나지 않습니다)
-   · 한 장씩 순차적으로 교체해도 됩니다. 예를 들어 hero-1.png만 넣으면
+   · 한 장씩 순차적으로 교체해도 됩니다. 예를 들어 a1.png만 넣으면
      1강만 커스텀 이미지가 되고 나머지 29단계는 기존 SVG가 유지됩니다.
    ===================================================================== */
 const ASSETS = {
@@ -697,9 +697,9 @@ const ASSETS = {
     29: 'monster-29.png'
   },
 
-  /* 용사 30단계 — hero-1.png ~ hero-30.png
+  /* 용사 30단계 — a1.png ~ a30.png
      아래 함수가 파일명을 만들어 줍니다. 규칙을 바꾸고 싶으면 여기만 수정하세요. */
-  heroFile: lv => `hero-${lv}.png`
+  heroFile: lv => `a${lv}.png`
 };
 
 function assetUrl(file){ return ASSETS.basePath + file; }
@@ -1371,7 +1371,7 @@ function heroSVG(lv, tag){
 }
 
 /* 용사 일러스트 렌더러.
-   커스텀 이미지(images/hero-N.png)가 있으면 그것을, 없으면 내장 SVG를 사용한다.
+   커스텀 이미지(images/aN.png)가 있으면 그것을, 없으면 내장 SVG를 사용한다.
    단계별로 따로 판정하므로 일부만 교체해도 정상 동작한다. */
 function heroVisual(lv, tag){
   const file = ASSETS.heroFile(lv);
