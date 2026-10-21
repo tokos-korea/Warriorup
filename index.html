@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>용사 강화하기</title>
+<!-- 원스토어 H5 Game SDK 어댑터(platform/onestore.js). 게임 코드와 분리되어 있고,
+     일반 브라우저에서는 SDK가 미지원 환경으로 응답해 게임에 아무 영향을 주지 않는다. -->
+<script type="module" src="platform/onestore.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -2325,6 +2328,21 @@ document.addEventListener('keydown',e=>{
   if(e.key.toLowerCase()==='s')sell();
   if(e.key==='Escape')$('modal').classList.remove('open');
 });
+
+/* =====================================================================
+   12. 플랫폼 연결점 — platform/*.js(원스토어 등)가 쓰는 최소 API.
+   게임 규칙·상태는 건드리지 않고 소리와 팝업만 다룬다.
+   ===================================================================== */
+window.WarriorUp = {
+  pauseAudio(){ if(actx&&actx.state==='running') actx.suspend().catch(()=>{}); },
+  resumeAudio(){ if(actx&&actx.state==='suspended') actx.resume().catch(()=>{}); },
+  setSound(on){ S.sound=!!on; $('btnSound').firstChild.textContent=S.sound?'소리 끄기':'소리 켜기'; },
+  /* 백키: 닫을 수 있는 팝업이 열려 있으면 닫고 true. 대결·확인창처럼 버튼으로만 닫는 팝업은 false */
+  closePopup(){
+    if(!$('modal').classList.contains('open')||duelLocked()) return false;
+    $('modal').classList.remove('open'); return true;
+  }
+};
 
 /* 시작 */
 buildLadder();
