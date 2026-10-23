@@ -2317,6 +2317,7 @@ $('btnReset').addEventListener('click',()=>{
       inv:{revive:0,dagger:0,shield:0},
       weapons:[],duelPick:null,weaponSeen:new Set(),sound:true,
       stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0}});
+    $('btnSound').firstChild.textContent='소리 끄기';
     $('log').innerHTML='';lastLv=0;
     log('새로운 용사가 제단 앞에 섰습니다.','info');
     render();
