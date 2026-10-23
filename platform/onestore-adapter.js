@@ -12,6 +12,7 @@ const INIT_TRIES = 2;        // initializeAsync는 실패 시 상태가 초기�
 
 const APP_CSS = `
 html.os-app body{
+  min-height:100dvh;
   padding-top:calc(12px + var(--os-safe-top,0px));
   padding-right:calc(12px + var(--os-safe-right,0px));
   padding-bottom:calc(24px + var(--os-safe-bottom,0px));
