@@ -66,7 +66,8 @@
 ### Cloudflare 대시보드 (Workers & Pages > warriorup > Settings)
 1. D1 데이터베이스를 만들고(예: `warriorup-ads`) Console에서 `platform/onestore-ads-schema.sql` 실행
 2. Bindings > D1 database: 변수 이름 **`ONESTORE_ADS_DB`** → 위 DB (Production, 필요하면 Preview도)
-3. Variables and Secrets > **Secret** `ONESTORE_ADS_API_KEY` = ONEconsole에 등록할 API Key (영문·숫자·`-`·`_` 5~64자, 직접 생성)
+3. Variables and Secrets > **Secret** `ONESTORE_ADS_API_KEY` = ONEconsole에 등록할 API Key (직접 생성. 콘솔 입력 규칙은 영문 대소문자·숫자·`-`·`_` 10~128자이고
+   가이드 문서에는 5~64자로 적혀 있어 둘 다 맞는 길이로: `openssl rand -hex 24` → 48자)
 4. 설정 후 재배포
 
 ### ONEconsole
