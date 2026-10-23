@@ -1,0 +1,10 @@
+# 비밀값·로컬 상태 — 커밋 금지 (Cloudflare Secret은 대시보드에만 둔다)
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+.wrangler/
+node_modules/
+
+# Claude Code 개인 설정
+.claude/settings.local.json
