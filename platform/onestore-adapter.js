@@ -4,7 +4,7 @@
    · 기준: 원스토어 웹게임 Web SDK 연동 가이드 v1.1.0 (03. Lifecycle 관리)
      https://onestore-dev.gitbook.io/dev/tools/web-sdk/lifecycle
    · SDK 객체를 인자로 받으므로 테스트에서 모의 객체로 바꿔 끼울 수 있다.
-   · 결제(IAP)·광고(IAA)는 게임에 없는 기능이라 연동하지 않는다.
+   · 광고는 onestore-ads.js가 맡는다(startGameAsync 성공 뒤 onestore.js가 연결). 결제(IAP)는 없다.
    ===================================================================== */
 
 const LOAD_WAIT_MS = 8000;   // 이미지·폰트 로딩을 기다리는 최대 시간. 넘으면 그대로 시작한다
@@ -67,7 +67,7 @@ export function connectOneStore(sdk, win = window) {
           sdk.setLoadingProgress(100);
           return sdk.startGameAsync();   // 성공하면 앱이 로딩 화면을 걷고 게임을 보여준다
         })
-        .then(() => markPlatform('onestore'))
+        .then(() => ({ ...markPlatform('onestore'), playerId: info.playerId }))
         .catch((e) => {
           console.error('[onestore] startGameAsync 실패', e?.reason, e?.message);
           return markPlatform('onestore-error', e?.reason);

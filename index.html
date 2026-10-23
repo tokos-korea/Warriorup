@@ -1916,7 +1916,7 @@ function enhance(){
   }
   function destroyHero(){
     S.stat.brk++;
-    S.lv=1;
+    S.lv=1; adReviveUsed=false;
     flash('소멸','var(--blood)','brk');sfx.brk();heroFx('brk');edgeFx('fail');shakeAltar();
     log(`<b>${before}강 ${name}</b>이(가) 빛으로 흩어졌습니다. <b>1강부터 다시</b> 시작합니다.`,'break');
     maybeDropWeapon(before, false);
@@ -1951,25 +1951,43 @@ function enhance(){
     flash('실패','var(--blood)','brk'); sfx.brk(); edgeFx('fail'); shakeAltar();
     log(`<b>${before}강 ${name}</b> 강화에 실패했습니다.`,'break');
 
-    if(eligible){
-      render();   // 실패 직후 골드/시도 횟수 등을 즉시 반영 (busy는 유지되어 중복 클릭 방지)
-      askConfirm('강화 실패...',
-        `${before}강 ${name} 강화에 실패했습니다.\n용사 부활권 ${req}개를 사용해 이 자리에서 바로 다시 도전하시겠습니까?\n(보유 부활권 ${S.inv.revive}개)\n\n사용하지 않으면 1강으로 돌아갑니다.`,
-        ()=>{ // 사용함 — 그 단계에서 그대로 다시 시작
-          S.inv.revive-=req;
+    /* 광고 부활 — 부활권을 쓸 수 있는 단계에서 한 판에 1번. 플랫폼이 광고를 등록했을 때만 묻는다.
+       거절하거나 광고를 끝까지 못 보면 아래 부활권 흐름으로 넘어간다 */
+    if(req!=null && reviveAd && !adReviveUsed){
+      render();
+      askAdRevive(`${before}강 ${name} 강화에 실패했습니다.\n광고를 보고 이 자리에서 바로 다시 도전하시겠습니까?\n(한 판에 1번)`,
+        ()=>{
+          adReviveUsed=true;
           flash('부활','var(--gold)');sfx.keep();
-          log(`<b>용사 부활권</b> ${req}개를 사용해 <b>${before}강</b> 자리에서 되살아났습니다. (남은 ${S.inv.revive}개)`,'info');
+          log(`광고를 보고 <b>${before}강</b> 자리에서 되살아났습니다. (이번 판 광고 부활 사용)`,'info');
           finishEnhance();
         },
-        ()=>{ destroyHero(); }   // 사용 안 함 — 1강으로 소멸
-      );
+        askTicket);
       return;
     }
-    render();
-    const noReviveMsg = req==null
-      ? `${before}강 ${name} 강화에 실패했습니다.\n이 단계에서는 용사 부활권을 사용할 수 없습니다.`
-      : `${before}강 ${name} 강화에 실패했습니다.\n실패 시 부활권 ${req}개 필요 (보유 ${S.inv.revive}개)`;
-    askInfo('강화 실패...', noReviveMsg, ()=>{ destroyHero(); }, '1강으로 돌아가기');
+    askTicket();
+
+    function askTicket(){
+      if(eligible){
+        render();   // 실패 직후 골드/시도 횟수 등을 즉시 반영 (busy는 유지되어 중복 클릭 방지)
+        askConfirm('강화 실패...',
+          `${before}강 ${name} 강화에 실패했습니다.\n용사 부활권 ${req}개를 사용해 이 자리에서 바로 다시 도전하시겠습니까?\n(보유 부활권 ${S.inv.revive}개)\n\n사용하지 않으면 1강으로 돌아갑니다.`,
+          ()=>{ // 사용함 — 그 단계에서 그대로 다시 시작
+            S.inv.revive-=req;
+            flash('부활','var(--gold)');sfx.keep();
+            log(`<b>용사 부활권</b> ${req}개를 사용해 <b>${before}강</b> 자리에서 되살아났습니다. (남은 ${S.inv.revive}개)`,'info');
+            finishEnhance();
+          },
+          ()=>{ destroyHero(); }   // 사용 안 함 — 1강으로 소멸
+        );
+        return;
+      }
+      render();
+      const noReviveMsg = req==null
+        ? `${before}강 ${name} 강화에 실패했습니다.\n이 단계에서는 용사 부활권을 사용할 수 없습니다.`
+        : `${before}강 ${name} 강화에 실패했습니다.\n실패 시 부활권 ${req}개 필요 (보유 ${S.inv.revive}개)`;
+      askInfo('강화 실패...', noReviveMsg, ()=>{ destroyHero(); }, '1강으로 돌아가기');
+    }
   }
 }
 
@@ -2038,6 +2056,33 @@ function askConfirm(title, message, onYes, onNo, yesLabel, noLabel){
   $('modal').classList.add('open');
   $('btnConfirmYes').addEventListener('click', ()=>{ $('modal').classList.remove('open'); onYes(); });
   $('btnConfirmNo').addEventListener('click', ()=>{ $('modal').classList.remove('open'); if(onNo) onNo(); });
+}
+
+/* 광고 부활 확인창 — reviveAd(플랫폼 모듈이 등록)가 { ok, message }로 답한다.
+   광고 판정·보상 검증은 플랫폼 모듈 몫이고, 게임은 ok가 true일 때만 부활시킨다 */
+let reviveAd=null, adReviveUsed=false;
+function askAdRevive(message, onRevive, onSkip){
+  $('modal').dataset.mode='confirm';
+  $('sheetTitle').textContent='광고 부활';
+  $('sheetSub').textContent='';
+  $('sheetBody').innerHTML = `
+    <p style="font-size:13px;line-height:1.75;color:var(--bone);white-space:pre-line">${message}</p>
+    <div class="duelBtns" style="margin-top:18px">
+      <button class="btn btn-main" id="btnAdRevive" style="flex:1">광고 보고 부활</button>
+      <button class="btn btn-sub" id="btnAdSkip" style="flex:1">아니요</button>
+    </div>`;
+  $('btnClose').style.display='none';
+  $('modal').classList.add('open');
+  const yes=$('btnAdRevive'), no=$('btnAdSkip');
+  yes.addEventListener('click', ()=>{
+    yes.disabled=no.disabled=true; yes.textContent='광고 확인 중…';
+    Promise.resolve().then(()=>reviveAd()).catch(()=>({ok:false, message:'광고를 표시하지 못했습니다.'})).then(r=>{
+      if(r&&r.ok){ $('modal').classList.remove('open'); onRevive(); return; }
+      yes.disabled=no.disabled=false; yes.textContent='광고 보고 부활';
+      if(r&&r.message) toast(r.message);
+    });
+  });
+  no.addEventListener('click', ()=>{ $('modal').classList.remove('open'); onSkip(); });
 }
 
 /* 버튼 하나짜리 안내창 (예: 테스트 모드 강화 실패 — 죽지 않고 재도전) */
@@ -2178,7 +2223,7 @@ function fight(){
       setTimeout(()=>{ showVictory(glv, G, gotItem, bonusGold, shieldSaved, glv===29); }, 620);
     }else{
       S.stat.duelL++;
-      S.lv=1;
+      S.lv=1; adReviveUsed=false;
       flash('패배','var(--blood)','brk');sfx.duelLose();heroFx('brk');edgeFx('fail');shakeAltar();
       log(`⚔️ <b>${G.n}</b>에게 패배했습니다. ${glv}강 용사는 쓰러지고 <b>1강부터 다시</b> 시작합니다.`,'break');
       maybeDropWeapon(glv, false);
@@ -2318,6 +2363,7 @@ $('btnReset').addEventListener('click',()=>{
       weapons:[],duelPick:null,weaponSeen:new Set(),sound:true,
       stat:{tryN:0,win:0,brk:0,earn:0,spend:0,duelW:0,duelL:0,streak:0,bestStreak:0}});
     $('btnSound').firstChild.textContent='소리 끄기';
+    adReviveUsed=false;
     $('log').innerHTML='';lastLv=0;
     log('새로운 용사가 제단 앞에 섰습니다.','info');
     render();
@@ -2332,12 +2378,14 @@ document.addEventListener('keydown',e=>{
 
 /* =====================================================================
    12. 플랫폼 연결점 — platform/*.js(원스토어 등)가 쓰는 최소 API.
-   게임 규칙·상태는 건드리지 않고 소리와 팝업만 다룬다.
+   게임 규칙·상태는 건드리지 않고 소리·팝업·광고 부활 등록만 다룬다.
    ===================================================================== */
 window.WarriorUp = {
   pauseAudio(){ if(actx&&actx.state==='running') actx.suspend().catch(()=>{}); },
   resumeAudio(){ if(actx&&actx.state==='suspended') actx.resume().catch(()=>{}); },
   setSound(on){ S.sound=!!on; $('btnSound').firstChild.textContent=S.sound?'소리 끄기':'소리 켜기'; },
+  /* 광고 부활 등록. fn()은 Promise<{ ok:boolean, message?:string }>. 등록하지 않으면 광고 부활 팝업이 나오지 않는다 */
+  setReviveAd(fn){ reviveAd = typeof fn==='function' ? fn : null; },
   /* 백키: 닫을 수 있는 팝업이 열려 있으면 닫고 true. 대결·확인창처럼 버튼으로만 닫는 팝업은 false */
   closePopup(){
     if(!$('modal').classList.contains('open')||duelLocked()) return false;
